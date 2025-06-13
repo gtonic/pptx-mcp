@@ -1,11 +1,38 @@
-# server.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 from mcp.server.fastmcp import FastMCP
 from typing import Optional, Dict, Any, List
 import os
 import ppt_utils
 
+# Create the MCP app as before
 mcp = FastMCP("pptx")
-app = mcp.sse_app()
+mcp_app = mcp.sse_app()
+
+# Create the FastAPI app
+app = FastAPI()
+
+# Enable CORS for all origins (for development; restrict in production as needed)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add the /.well-known/wingman endpoint to the FastAPI app
+@app.get("/.well-known/wingman")
+async def wingman_well_known():
+    return {}
+
+# Add all MCP routes to the FastAPI app at root
+app.router.routes.extend(mcp_app.routes)
+
+import shutil
+from fastapi import UploadFile, File, Form, HTTPException
+from fastapi.responses import JSONResponse
 
 # In-memory storage for presentations
 presentations = {}
@@ -152,6 +179,34 @@ def add_shape(
             fill_color=fill_color, line_color=line_color, line_width=line_width
         )
         return {"message": f"Added {shape_type} shape to slide {slide_index}", "shape_index": len(slide.shapes) - 1}
+    except (ValueError, KeyError) as e:
+        return {"error": str(e)}
+
+@mcp.tool()
+def add_line(
+    slide_index: int,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    line_color: Optional[List[int]] = None,
+    line_width: Optional[float] = None,
+    presentation_id: Optional[str] = None
+) -> Dict:
+    """Add a straight line to a slide."""
+    try:
+        pres = get_current_presentation() if presentation_id is None else presentations[presentation_id]
+        if not (0 <= slide_index < len(pres.slides)):
+            return {"error": f"Invalid slide index: {slide_index}"}
+        slide = pres.slides[slide_index]
+        ppt_utils.add_line(
+            slide, x1, y1, x2, y2,
+            line_color=line_color, line_width=line_width
+        )
+        return {
+            "message": f"Added line to slide {slide_index}",
+            "shape_index": len(slide.shapes) - 1
+        }
     except (ValueError, KeyError) as e:
         return {"error": str(e)}
 

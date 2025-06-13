@@ -97,3 +97,22 @@ def add_shape(slide: Any, shape_type: str, left: float, top: float, width: float
         if kwargs.get('line_width'):
             line.width = Pt(kwargs['line_width'])
     return shape
+
+def add_line(slide: Any, x1: float, y1: float, x2: float, y2: float, line_color: Optional[List[int]] = None, line_width: Optional[float] = None):
+    """
+    Adds a straight line (connector) to a slide.
+    Coordinates are in inches.
+    """
+    from pptx.util import Inches, Pt
+    from pptx.dml.color import RGBColor
+    from pptx.enum.shapes import MSO_CONNECTOR
+
+    line = slide.shapes.add_connector(
+        MSO_CONNECTOR.STRAIGHT,
+        Inches(x1), Inches(y1), Inches(x2), Inches(y2)
+    )
+    if line_color:
+        line.line.color.rgb = RGBColor(*line_color)
+    if line_width:
+        line.line.width = Pt(line_width)
+    return line

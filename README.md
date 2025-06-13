@@ -29,7 +29,7 @@ Once the dependencies are installed, you can start the MCP server by running the
 python server.py
 ```
 
-The server will start and listen for incoming MCP requests on `0.0.0.0:8000`.
+The server will start and listen for incoming MCP requests on `0.0.0.0:8081`.
 
 ## Available Tools
 
