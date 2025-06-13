@@ -1,6 +1,8 @@
 {
     "mcpServers": {
         "pptx": {
+            "start": "docker build -t pptx-mcp . && docker run -d -p 8000:8000 --rm --name pptx-mcp-container pptx-mcp",
+            "stop": "docker stop pptx-mcp-container",
             "autoApprove": [
                 "createPresentation",
                 "create_presentation",
