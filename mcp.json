@@ -1,0 +1,29 @@
+{
+    "mcpServers": {
+        "pptx": {
+            "autoApprove": [
+                "createPresentation",
+                "create_presentation",
+                "open_presentation",
+                "save_presentation",
+                "get_presentation_info",
+                "set_core_properties",
+                "add_slide",
+                "get_slide_info",
+                "populate_placeholder",
+                "add_bullet_points",
+                "add_textbox",
+                "add_image",
+                "add_image_from_base64",
+                "add_table",
+                "format_table_cell",
+                "add_shape",
+                "add_chart"
+            ],
+            "disabled": false,
+            "timeout": 60,
+            "type": "sse",
+            "url": "http://localhost:8000/sse"
+        }
+    }
+}
