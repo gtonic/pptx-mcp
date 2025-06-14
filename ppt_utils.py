@@ -116,3 +116,39 @@ def add_line(slide: Any, x1: float, y1: float, x2: float, y2: float, line_color:
     if line_width:
         line.line.width = Pt(line_width)
     return line
+
+def extract_template_styles(pres: Presentation) -> Dict[str, Any]:
+    """
+    Extracts theme colors and default font info from a presentation.
+    Returns a dict with 'colors' and 'fonts' keys.
+    """
+    # Extract theme colors
+    colors = {}
+    try:
+        color_scheme = pres.theme_color_scheme
+        for color_name in color_scheme.__dir__():
+            if not color_name.startswith("_") and color_name not in ["part", "element"]:
+                try:
+                    color = getattr(color_scheme, color_name)
+                    if hasattr(color, "rgb"):
+                        colors[color_name] = tuple(color.rgb)
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+    # Extract default font info from slide master
+    fonts = {}
+    try:
+        master = pres.slide_master
+        # Title and body font
+        title_font = master.placeholders.title.text_frame.paragraphs[0].font
+        body_font = master.placeholders[1].text_frame.paragraphs[0].font
+        fonts["title_font_name"] = title_font.name
+        fonts["title_font_size"] = title_font.size.pt if title_font.size else None
+        fonts["body_font_name"] = body_font.name
+        fonts["body_font_size"] = body_font.size.pt if body_font.size else None
+    except Exception:
+        pass
+
+    return {"colors": colors, "fonts": fonts}

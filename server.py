@@ -38,11 +38,49 @@ from fastapi.responses import JSONResponse
 presentations = {}
 current_presentation_id = None
 
+# In-memory storage for template styles
+current_template_styles = None
+current_template_path = None
+
 def get_current_presentation():
     """Get the current presentation object or raise an error if none is loaded."""
     if current_presentation_id is None or current_presentation_id not in presentations:
         raise ValueError("No presentation is currently loaded. Please create or open a presentation first.")
     return presentations[current_presentation_id]
+# ---- Template Tools ----
+
+@mcp.tool()
+def set_template_presentation(file_path: str) -> Dict:
+    """
+    Set a template presentation by file path and extract its styles.
+    """
+    global current_template_styles, current_template_path
+    if not os.path.exists(file_path):
+        return {"error": f"Template file not found: {file_path}"}
+    try:
+        pres = ppt_utils.open_presentation(file_path)
+        styles = ppt_utils.extract_template_styles(pres)
+        current_template_styles = styles
+        current_template_path = file_path
+        return {
+            "message": f"Template set from {file_path}",
+            "template_path": file_path,
+            "styles": styles
+        }
+    except Exception as e:
+        return {"error": f"Failed to set template: {str(e)}"}
+
+@mcp.tool()
+def get_template_styles() -> Dict:
+    """
+    Get the currently loaded template styles.
+    """
+    if current_template_styles is None:
+        return {"error": "No template styles loaded."}
+    return {
+        "template_path": current_template_path,
+        "styles": current_template_styles
+    }
 
 # ---- Presentation Tools ----
 
@@ -147,12 +185,25 @@ def add_textbox(
     italic: Optional[bool] = None, color: Optional[List[int]] = None, alignment: Optional[str] = None,
     presentation_id: Optional[str] = None
 ) -> Dict:
-    """Add a textbox to a slide."""
+    """Add a textbox to a slide, using template styles as defaults if available."""
     try:
         pres = get_current_presentation() if presentation_id is None else presentations[presentation_id]
         if not (0 <= slide_index < len(pres.slides)):
             return {"error": f"Invalid slide index: {slide_index}"}
         slide = pres.slides[slide_index]
+
+        # Use template styles as defaults if not provided
+        defaults = current_template_styles["fonts"] if current_template_styles and "fonts" in current_template_styles else {}
+        if font_name is None:
+            font_name = defaults.get("body_font_name")
+        if font_size is None:
+            font_size = defaults.get("body_font_size")
+        # Optionally, set a default color from template theme colors (e.g., "accent1")
+        if color is None and current_template_styles and "colors" in current_template_styles:
+            accent = current_template_styles["colors"].get("accent_1")
+            if accent:
+                color = list(accent)
+
         ppt_utils.add_textbox(
             slide, left, top, width, height, text,
             font_size=font_size, font_name=font_name, bold=bold,
@@ -168,12 +219,25 @@ def add_shape(
     fill_color: Optional[List[int]] = None, line_color: Optional[List[int]] = None,
     line_width: Optional[float] = None, presentation_id: Optional[str] = None
 ) -> Dict:
-    """Add an auto shape to a slide."""
+    """Add an auto shape to a slide, using template styles as defaults if available."""
     try:
         pres = get_current_presentation() if presentation_id is None else presentations[presentation_id]
         if not (0 <= slide_index < len(pres.slides)):
             return {"error": f"Invalid slide index: {slide_index}"}
         slide = pres.slides[slide_index]
+
+        # Use template styles as defaults if not provided
+        if current_template_styles and "colors" in current_template_styles:
+            colors = current_template_styles["colors"]
+            if fill_color is None:
+                accent = colors.get("accent_1")
+                if accent:
+                    fill_color = list(accent)
+            if line_color is None:
+                text1 = colors.get("text_1")
+                if text1:
+                    line_color = list(text1)
+
         ppt_utils.add_shape(
             slide, shape_type, left, top, width, height,
             fill_color=fill_color, line_color=line_color, line_width=line_width
