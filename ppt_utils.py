@@ -10,16 +10,27 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.chart.data import CategoryChartData
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 
+DATA_DIR = "/data"
+
 def create_presentation() -> Presentation:
     """Creates a new PowerPoint presentation object."""
     return Presentation()
 
+import os
+
 def open_presentation(file_path: str) -> Presentation:
     """Opens an existing PowerPoint presentation from a file."""
+    # Ensure file_path is in DATA_DIR
+    if not file_path.startswith(DATA_DIR + "/"):
+        file_path = os.path.join(DATA_DIR, os.path.basename(file_path))
     return Presentation(file_path)
 
 def save_presentation(pres: Presentation, file_path: str) -> str:
     """Saves a presentation object to a file."""
+    # Ensure file_path is in DATA_DIR
+    import os
+    if not file_path.startswith(DATA_DIR + "/"):
+        file_path = os.path.join(DATA_DIR, os.path.basename(file_path))
     pres.save(file_path)
     return file_path
 

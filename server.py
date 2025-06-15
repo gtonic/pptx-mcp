@@ -103,6 +103,9 @@ def create_presentation(id: Optional[str] = None) -> Dict:
 def open_presentation(file_path: str, id: Optional[str] = None) -> Dict:
     """Open an existing PowerPoint presentation from a file."""
     global current_presentation_id
+    # Ensure file_path is in /data
+    if not file_path.startswith("/data/"):
+        file_path = os.path.join("/data", os.path.basename(file_path))
     if not os.path.exists(file_path):
         return {"error": f"File not found: {file_path}"}
     try:
@@ -122,6 +125,9 @@ def open_presentation(file_path: str, id: Optional[str] = None) -> Dict:
 @mcp.tool()
 def save_presentation(file_path: str, presentation_id: Optional[str] = None) -> Dict:
     """Save a presentation to a file."""
+    # Ensure file_path is in /data
+    if not file_path.startswith("/data/"):
+        file_path = os.path.join("/data", os.path.basename(file_path))
     try:
         pres = get_current_presentation() if presentation_id is None else presentations[presentation_id]
         saved_path = ppt_utils.save_presentation(pres, file_path)
