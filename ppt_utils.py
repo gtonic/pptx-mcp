@@ -27,10 +27,16 @@ def open_presentation(file_path: str) -> Presentation:
 
 def save_presentation(pres: Presentation, file_path: str) -> str:
     """Saves a presentation object to a file."""
-    # Ensure file_path is in DATA_DIR
     import os
-    if not file_path.startswith(DATA_DIR + "/"):
+    
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    
+    # If file_path doesn't start with an absolute path, use DATA_DIR
+    if not os.path.isabs(file_path) and not file_path.startswith(DATA_DIR + "/"):
         file_path = os.path.join(DATA_DIR, os.path.basename(file_path))
+        os.makedirs(DATA_DIR, exist_ok=True)
+    
     pres.save(file_path)
     return file_path
 
@@ -163,3 +169,183 @@ def extract_template_styles(pres: Presentation) -> Dict[str, Any]:
         pass
 
     return {"colors": colors, "fonts": fonts}
+
+
+def add_chart(slide: Any, chart_type: str, left: float, top: float, width: float, height: float, 
+              data: Dict[str, Any]) -> Any:
+    """
+    Add a chart to a slide.
+    
+    Args:
+        slide: The slide object to add the chart to
+        chart_type: Type of chart ('column', 'line', 'pie', 'bar', 'area')
+        left: Left position in inches
+        top: Top position in inches
+        width: Width in inches  
+        height: Height in inches
+        data: Chart data in format {'categories': [...], 'series': [{'name': '...', 'values': [...]}]}
+    
+    Returns:
+        The created chart object
+    """
+    from pptx.util import Inches
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
+    
+    # Map chart type strings to constants
+    chart_type_map = {
+        'column': XL_CHART_TYPE.COLUMN_CLUSTERED,
+        'line': XL_CHART_TYPE.LINE,
+        'pie': XL_CHART_TYPE.PIE,
+        'bar': XL_CHART_TYPE.BAR_CLUSTERED,
+        'area': XL_CHART_TYPE.AREA
+    }
+    
+    if chart_type.lower() not in chart_type_map:
+        raise ValueError(f"Unsupported chart type: {chart_type}. Supported: {list(chart_type_map.keys())}")
+    
+    # Create chart data
+    chart_data = CategoryChartData()
+    chart_data.categories = data['categories']
+    
+    for series_info in data['series']:
+        chart_data.add_series(series_info['name'], series_info['values'])
+    
+    # Add chart to slide
+    chart = slide.shapes.add_chart(
+        chart_type_map[chart_type.lower()],
+        Inches(left), Inches(top), Inches(width), Inches(height),
+        chart_data
+    ).chart
+    
+    # Configure chart appearance
+    chart.has_legend = True
+    chart.legend.position = XL_LEGEND_POSITION.BOTTOM
+    chart.legend.include_in_layout = False
+    
+    return chart
+
+
+def add_table(slide: Any, left: float, top: float, rows: int, cols: int, 
+              data: Optional[List[List[str]]] = None) -> Any:
+    """
+    Add a table to a slide.
+    
+    Args:
+        slide: The slide object to add the table to
+        left: Left position in inches
+        top: Top position in inches
+        rows: Number of rows
+        cols: Number of columns
+        data: Optional table data as list of lists
+    
+    Returns:
+        The created table object
+    """
+    from pptx.util import Inches
+    
+    # Calculate appropriate table dimensions
+    table_width = min(8.0, cols * 1.5)  # Max 8 inches, 1.5 inches per column
+    table_height = min(5.0, rows * 0.5)  # Max 5 inches, 0.5 inches per row
+    
+    # Add table to slide
+    table_shape = slide.shapes.add_table(
+        rows, cols,
+        Inches(left), Inches(top), Inches(table_width), Inches(table_height)
+    )
+    table = table_shape.table
+    
+    # Populate table with data if provided
+    if data:
+        for row_idx, row_data in enumerate(data[:rows]):  # Limit to available rows
+            for col_idx, cell_data in enumerate(row_data[:cols]):  # Limit to available cols
+                cell = table.cell(row_idx, col_idx)
+                cell.text = str(cell_data)
+                
+                # Style header row
+                if row_idx == 0:
+                    cell.fill.solid()
+                    cell.fill.fore_color.rgb = RGBColor(79, 129, 189)  # Blue header
+                    # Make header text bold and white
+                    for paragraph in cell.text_frame.paragraphs:
+                        for run in paragraph.runs:
+                            run.font.bold = True
+                            run.font.color.rgb = RGBColor(255, 255, 255)
+    
+    return table
+
+
+def add_image_from_path(slide: Any, image_path: str, left: float, top: float, 
+                       width: Optional[float] = None, height: Optional[float] = None) -> Any:
+    """
+    Add an image to a slide from a file path.
+    
+    Args:
+        slide: The slide object to add the image to
+        image_path: Path to the image file
+        left: Left position in inches
+        top: Top position in inches
+        width: Optional width in inches (maintains aspect ratio if height not specified)
+        height: Optional height in inches (maintains aspect ratio if width not specified)
+    
+    Returns:
+        The created image shape object
+    """
+    from pptx.util import Inches
+    import os
+    
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+    
+    # Add image with specified dimensions
+    if width is not None and height is not None:
+        picture = slide.shapes.add_picture(
+            image_path, Inches(left), Inches(top), Inches(width), Inches(height)
+        )
+    elif width is not None:
+        picture = slide.shapes.add_picture(
+            image_path, Inches(left), Inches(top), width=Inches(width)
+        )
+    elif height is not None:
+        picture = slide.shapes.add_picture(
+            image_path, Inches(left), Inches(top), height=Inches(height)
+        )
+    else:
+        picture = slide.shapes.add_picture(image_path, Inches(left), Inches(top))
+    
+    return picture
+
+
+def create_bullet_points(slide: Any, placeholder_idx: int, bullet_points: List[str], 
+                        font_size: Optional[int] = None) -> None:
+    """
+    Add bullet points to a placeholder on a slide.
+    
+    Args:
+        slide: The slide object
+        placeholder_idx: Index of the placeholder to use
+        bullet_points: List of bullet point text
+        font_size: Optional font size in points
+    """
+    from pptx.util import Pt
+    
+    if placeholder_idx >= len(slide.placeholders):
+        raise ValueError(f"Placeholder index {placeholder_idx} not found")
+    
+    placeholder = slide.placeholders[placeholder_idx]
+    text_frame = placeholder.text_frame
+    text_frame.clear()  # Clear existing text
+    
+    for i, bullet_text in enumerate(bullet_points):
+        if i == 0:
+            # Use first paragraph
+            p = text_frame.paragraphs[0]
+        else:
+            # Add new paragraph
+            p = text_frame.add_paragraph()
+        
+        p.text = bullet_text
+        p.level = 0  # Top level bullet
+        
+        if font_size:
+            p.font.size = Pt(font_size)
