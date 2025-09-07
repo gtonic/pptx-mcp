@@ -1,18 +1,21 @@
 """
 Slide Management Module
 
-Handles slide creation, manipulation, and content management.
+Handles slide creation, manipulation, and content management with validation and performance monitoring.
 """
 from typing import Optional, Dict, Any, List
 import os
 import ppt_utils
 from presentation_manager import presentation_manager
 from template_manager import template_manager
+from input_validator import validator, ValidationError
+from performance_optimizer import performance_monitor
 
 
 class SlideManager:
     """Manages slide operations within presentations."""
     
+    @performance_monitor.track_operation("add_slide")
     def add_slide(self, layout_index: int = 1, title: Optional[str] = None, presentation_id: Optional[str] = None) -> Dict[str, Any]:
         """Add a new slide to the presentation."""
         try:
@@ -22,15 +25,21 @@ class SlideManager:
                     "error": f"Invalid layout index: {layout_index}. Available: 0-{len(pres.slide_layouts) - 1}",
                     "available_layouts": {i: l.name for i, l in enumerate(pres.slide_layouts)}
                 }
+            
+            # Validate title if provided
+            if title:
+                title = validator.validate_text(title, max_length=validator.MAX_TITLE_LENGTH)
+            
             slide, info = ppt_utils.add_slide(pres, layout_index, title)
             return {
                 "message": f"Added slide with layout '{info['layout_name']}'",
                 "slide_index": len(pres.slides) - 1,
                 **info
             }
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, ValidationError) as e:
             return {"error": str(e)}
     
+    @performance_monitor.track_operation("add_textbox")
     def add_textbox(
         self,
         slide_index: int,
@@ -50,8 +59,15 @@ class SlideManager:
         """Add a textbox to a slide, using template styles as defaults if available."""
         try:
             pres = presentation_manager.get_presentation(presentation_id)
-            if not (0 <= slide_index < len(pres.slides)):
-                return {"error": f"Invalid slide index: {slide_index}"}
+            
+            # Validate inputs
+            slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
+            left, top, width, height = validator.validate_dimensions(left, top, width, height)
+            text = validator.validate_text(text)
+            
+            if color:
+                color = validator.validate_color(color)
+            
             slide = pres.slides[slide_index]
             
             # Use template styles as defaults if not provided
@@ -73,7 +89,7 @@ class SlideManager:
                 italic=italic, color=color, alignment=alignment
             )
             return {"message": f"Added textbox to slide {slide_index}", "shape_index": len(slide.shapes) - 1}
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, ValidationError) as e:
             return {"error": str(e)}
     
     def add_shape(
@@ -153,6 +169,7 @@ class SlideManager:
             return {"error": str(e)}
 
 
+    @performance_monitor.track_operation("add_chart")
     def add_chart(
         self,
         slide_index: int,
@@ -167,8 +184,12 @@ class SlideManager:
         """Add a chart to a slide."""
         try:
             pres = presentation_manager.get_presentation(presentation_id)
-            if not (0 <= slide_index < len(pres.slides)):
-                return {"error": f"Invalid slide index: {slide_index}"}
+            
+            # Validate inputs
+            slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
+            left, top, width, height = validator.validate_dimensions(left, top, width, height)
+            data = validator.validate_chart_data(data)
+            
             slide = pres.slides[slide_index]
             
             chart = ppt_utils.add_chart(slide, chart_type, left, top, width, height, data)
@@ -176,7 +197,7 @@ class SlideManager:
                 "message": f"Added {chart_type} chart to slide {slide_index}",
                 "shape_index": len(slide.shapes) - 1
             }
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, ValidationError) as e:
             return {"error": str(e)}
     
     def add_table(

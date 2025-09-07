@@ -14,6 +14,8 @@ import logging
 from presentation_manager import presentation_manager
 from template_manager import template_manager
 from slide_manager import slide_manager
+from input_validator import validator, ValidationError
+from performance_optimizer import performance_monitor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -433,6 +435,49 @@ def add_bullet_points(
     return slide_manager.add_bullet_points(
         slide_index, placeholder_idx, bullet_points, font_size, presentation_id
     )
+
+
+# ============================================================================
+# PERFORMANCE AND MONITORING TOOLS
+# ============================================================================
+
+@mcp.tool()
+def get_performance_report() -> Dict[str, Any]:
+    """
+    Get comprehensive performance report and recommendations.
+    
+    Returns:
+        Dictionary with performance metrics, memory usage, and optimization recommendations
+    """
+    logger.info("Generating performance report")
+    return performance_monitor.get_performance_report()
+
+@mcp.tool()
+def optimize_for_large_presentation(slide_count: int) -> Dict[str, Any]:
+    """
+    Get optimization recommendations for large presentations.
+    
+    Args:
+        slide_count: Number of slides in the presentation
+        
+    Returns:
+        Dictionary with optimization suggestions and batch processing recommendations
+    """
+    logger.info(f"Getting optimization recommendations for {slide_count} slides")
+    return performance_monitor.optimize_large_presentation(slide_count)
+
+@mcp.tool()
+def cleanup_memory() -> Dict[str, Any]:
+    """
+    Force memory cleanup to free resources.
+    
+    Returns:
+        Dictionary with cleanup confirmation
+    """
+    import time
+    logger.info("Performing memory cleanup")
+    performance_monitor.cleanup_memory()
+    return {"message": "Memory cleanup completed", "timestamp": time.time()}
 
 
 # ============================================================================
