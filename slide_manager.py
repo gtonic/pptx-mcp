@@ -10,6 +10,12 @@ from presentation_manager import presentation_manager
 from template_manager import template_manager
 from input_validator import validator, ValidationError
 from performance_optimizer import performance_monitor
+from text_autofit import (
+    text_autofit_engine, 
+    AutoFitStrategy, 
+    ContainerDimensions,
+    AutoFitResult
+)
 
 
 class SlideManager:
@@ -275,6 +281,196 @@ class SlideManager:
                 "placeholder_index": placeholder_idx
             }
         except (ValueError, KeyError) as e:
+            return {"error": str(e)}
+    
+    @performance_monitor.track_operation("add_auto_fit_text")
+    def add_auto_fit_text(
+        self,
+        slide_index: int,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        text: str,
+        strategy: str = "smart",
+        font_size: Optional[int] = None,
+        font_name: Optional[str] = None,
+        bold: Optional[bool] = None,
+        italic: Optional[bool] = None,
+        color: Optional[List[int]] = None,
+        alignment: Optional[str] = None,
+        create_new_slides: bool = True,
+        slide_title_template: Optional[str] = None,
+        presentation_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Add text with intelligent auto-fit to a slide.
+        
+        When AI-generated content is extensive, this method automatically adjusts
+        font size, uses multi-column layout, or splits content across slides.
+        
+        Args:
+            slide_index: Index of the target slide
+            left: Left position in inches
+            top: Top position in inches
+            width: Width in inches
+            height: Height in inches
+            text: Text content to add (can be very long)
+            strategy: Auto-fit strategy ('smart', 'shrink_font', 'multi_column', 'split_slides')
+            font_size: Optional preferred font size in points
+            font_name: Optional font name
+            bold: Optional bold formatting
+            italic: Optional italic formatting
+            color: Optional text color as RGB list [r, g, b]
+            alignment: Optional text alignment (left, center, right, justify)
+            create_new_slides: Whether to create new slides if content is split
+            slide_title_template: Title template for new slides (use {page} for page number)
+            presentation_id: Optional ID of the target presentation
+            
+        Returns:
+            Dictionary with auto-fit results including strategy used and any new slides created
+        """
+        try:
+            pres = presentation_manager.get_presentation(presentation_id)
+            
+            # Validate inputs
+            slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
+            left, top, width, height = validator.validate_dimensions(left, top, width, height)
+            text = validator.validate_text(text)
+            
+            if color:
+                color = validator.validate_color(color)
+            
+            # Use template styles as defaults if not provided
+            font_defaults = template_manager.get_default_font_settings()
+            color_defaults = template_manager.get_default_color_settings()
+            
+            if font_name is None:
+                font_name = font_defaults.get("body_font_name")
+            if color is None:
+                accent = color_defaults.get("accent_1")
+                if accent:
+                    color = list(accent)
+            
+            # Parse strategy
+            strategy_map = {
+                "smart": AutoFitStrategy.SMART,
+                "shrink_font": AutoFitStrategy.SHRINK_FONT,
+                "multi_column": AutoFitStrategy.MULTI_COLUMN,
+                "split_slides": AutoFitStrategy.SPLIT_SLIDES
+            }
+            fit_strategy = strategy_map.get(strategy.lower(), AutoFitStrategy.SMART)
+            
+            # Create container dimensions
+            container = ContainerDimensions(
+                width=width,
+                height=height,
+                slide_width=pres.slide_width.inches,
+                slide_height=pres.slide_height.inches
+            )
+            
+            # Calculate auto-fit
+            result = text_autofit_engine.auto_fit(
+                text=text,
+                container=container,
+                strategy=fit_strategy,
+                preferred_font_size=font_size
+            )
+            
+            created_shapes = []
+            created_slides = []
+            
+            if result.strategy == AutoFitStrategy.MULTI_COLUMN:
+                # Create multi-column layout on the same slide
+                slide = pres.slides[slide_index]
+                column_gap = 0.3  # Gap between columns in inches
+                
+                for col_idx, col_text in enumerate(result.text_segments):
+                    col_left = left + col_idx * (result.column_width + column_gap)
+                    
+                    ppt_utils.add_textbox(
+                        slide, col_left, top, result.column_width, height, col_text,
+                        font_size=result.font_size, font_name=font_name, bold=bold,
+                        italic=italic, color=color, alignment=alignment
+                    )
+                    created_shapes.append({
+                        "slide_index": slide_index,
+                        "shape_index": len(slide.shapes) - 1,
+                        "column": col_idx
+                    })
+                
+            elif result.strategy == AutoFitStrategy.SPLIT_SLIDES and len(result.text_segments) > 1:
+                # Split content across multiple slides
+                for seg_idx, segment_text in enumerate(result.text_segments):
+                    if seg_idx == 0:
+                        # Use the specified slide for first segment
+                        current_slide = pres.slides[slide_index]
+                        current_slide_index = slide_index
+                    else:
+                        if create_new_slides:
+                            # Create a new slide for subsequent segments
+                            # Find the layout index for the original slide's layout
+                            layout_idx = 1  # Default blank layout
+                            original_layout = pres.slides[slide_index].slide_layout
+                            for i, layout in enumerate(pres.slide_layouts):
+                                if layout == original_layout:
+                                    layout_idx = i
+                                    break
+                            
+                            # Add the new slide
+                            new_slide, _ = ppt_utils.add_slide(pres, layout_idx)
+                            current_slide = new_slide
+                            current_slide_index = len(pres.slides) - 1
+                            
+                            # Set title if template provided
+                            if slide_title_template:
+                                title_text = slide_title_template.replace("{page}", str(seg_idx + 1))
+                                if current_slide.shapes.title:
+                                    current_slide.shapes.title.text = title_text
+                            
+                            created_slides.append(current_slide_index)
+                        else:
+                            # Don't create new slides, put all on original
+                            current_slide = pres.slides[slide_index]
+                            current_slide_index = slide_index
+                            # Adjust top position for stacking
+                            top = top + height + 0.2
+                    
+                    ppt_utils.add_textbox(
+                        current_slide, left, top, width, height, segment_text,
+                        font_size=result.font_size, font_name=font_name, bold=bold,
+                        italic=italic, color=color, alignment=alignment
+                    )
+                    created_shapes.append({
+                        "slide_index": current_slide_index,
+                        "shape_index": len(current_slide.shapes) - 1,
+                        "segment": seg_idx
+                    })
+            else:
+                # Single textbox with adjusted font size
+                slide = pres.slides[slide_index]
+                ppt_utils.add_textbox(
+                    slide, left, top, width, height, result.text_segments[0],
+                    font_size=result.font_size, font_name=font_name, bold=bold,
+                    italic=italic, color=color, alignment=alignment
+                )
+                created_shapes.append({
+                    "slide_index": slide_index,
+                    "shape_index": len(slide.shapes) - 1
+                })
+            
+            return {
+                "message": f"Added auto-fit text using '{result.strategy.value}' strategy",
+                "strategy_used": result.strategy.value,
+                "font_size": result.font_size,
+                "columns": result.columns,
+                "slides_used": result.slides_needed,
+                "recommendation": result.recommendation,
+                "shapes_created": created_shapes,
+                "new_slides_created": created_slides
+            }
+            
+        except (ValueError, KeyError, ValidationError) as e:
             return {"error": str(e)}
 
 

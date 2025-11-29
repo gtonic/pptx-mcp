@@ -4,6 +4,8 @@ High-Level Layout Engine Module
 Provides automatic layout calculation and placement for AI-generated PowerPoint diagrams.
 This module eliminates the need for explicit pixel coordinates by offering structural
 layout descriptions (grid, list, hierarchy, flow) that automatically calculate positions.
+
+Now includes intelligent text auto-fit to handle extensive AI-generated content.
 """
 from typing import Optional, Dict, Any, List, Union, Tuple
 from dataclasses import dataclass, field
@@ -13,6 +15,7 @@ import math
 from presentation_manager import presentation_manager
 from template_manager import template_manager
 from performance_optimizer import performance_monitor
+from text_autofit import text_autofit_engine, ContainerDimensions
 import ppt_utils
 
 
@@ -788,6 +791,21 @@ class LayoutEngine:
         import logging
         logger = logging.getLogger(__name__)
         
+        # Calculate optimal font size using auto-fit if content is provided
+        font_size = elem.font_size
+        if elem.content and elem.width > 0 and elem.height > 0:
+            container = ContainerDimensions(width=elem.width, height=elem.height)
+            optimal_size = text_autofit_engine.calculate_optimal_font_size(
+                text_autofit_engine.analyze_text(elem.content),
+                container,
+                target_lines=max(1, int(elem.height / 0.3))  # Approximate lines that fit
+            )
+            # Use the smaller of the specified font size and optimal size
+            if font_size:
+                font_size = min(font_size, optimal_size)
+            else:
+                font_size = optimal_size
+        
         if elem.element_type == "shape" and elem.shape_type:
             # Add shape with text
             shape = ppt_utils.add_shape(
@@ -813,9 +831,9 @@ class LayoutEngine:
                             logger.warning(f"Invalid alignment '{elem.alignment}', using CENTER")
                             p.alignment = PP_ALIGN.CENTER
                     font = p.font
-                    if elem.font_size:
+                    if font_size:
                         from pptx.util import Pt
-                        font.size = Pt(elem.font_size)
+                        font.size = Pt(font_size)
                     if elem.font_name:
                         font.name = elem.font_name
                     if elem.bold is not None:
@@ -830,7 +848,7 @@ class LayoutEngine:
             ppt_utils.add_textbox(
                 slide, elem.left, elem.top, elem.width, elem.height,
                 elem.content,
-                font_size=elem.font_size,
+                font_size=font_size,
                 font_name=elem.font_name,
                 bold=elem.bold,
                 color=elem.text_color,

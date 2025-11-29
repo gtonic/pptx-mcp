@@ -439,6 +439,92 @@ def add_bullet_points(
 
 
 # ============================================================================
+# INTELLIGENT TEXT AUTO-FIT TOOLS
+# ============================================================================
+
+@mcp.tool()
+def add_auto_fit_text(
+    slide_index: int,
+    left: float,
+    top: float,
+    width: float,
+    height: float,
+    text: str,
+    strategy: str = "smart",
+    font_size: Optional[int] = None,
+    font_name: Optional[str] = None,
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+    color: Optional[List[int]] = None,
+    alignment: Optional[str] = None,
+    create_new_slides: bool = True,
+    slide_title_template: Optional[str] = None,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Add text with intelligent auto-fit to a slide.
+    
+    When AI-generated content is extensive, this tool automatically adjusts:
+    - Font size based on text length and container dimensions
+    - Multi-column layout for better readability
+    - Slide splitting for very long content
+    
+    Goal: Maximum readability and sensible slide division for large data sets.
+    
+    Args:
+        slide_index: Index of the target slide
+        left: Left position in inches
+        top: Top position in inches
+        width: Width in inches
+        height: Height in inches
+        text: Text content to add (can be very long AI-generated content)
+        strategy: Auto-fit strategy:
+            - 'smart': Automatically choose best strategy (default)
+            - 'shrink_font': Only adjust font size
+            - 'multi_column': Split into multiple columns
+            - 'split_slides': Split across multiple slides
+        font_size: Optional preferred font size in points (will be adjusted if needed)
+        font_name: Optional font name (defaults to template or Calibri)
+        bold: Optional bold formatting
+        italic: Optional italic formatting
+        color: Optional text color as RGB list [r, g, b]
+        alignment: Optional text alignment (left, center, right, justify)
+        create_new_slides: Whether to create new slides if content is split (default: True)
+        slide_title_template: Title template for new slides (use {page} for page number)
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with:
+            - strategy_used: The auto-fit strategy that was applied
+            - font_size: The final font size used
+            - columns: Number of columns (if multi-column)
+            - slides_used: Number of slides used
+            - recommendation: Explanation of what was done
+            - shapes_created: List of created shapes
+            - new_slides_created: List of any new slide indices
+            
+    Example:
+        # Long AI-generated content that needs intelligent fitting
+        add_auto_fit_text(
+            slide_index=0,
+            left=0.5, top=1.5, width=9.0, height=5.0,
+            text="Very long AI-generated content...",
+            strategy="smart",
+            create_new_slides=True,
+            slide_title_template="Content (Page {page})"
+        )
+    """
+    logger.info(f"Adding auto-fit text to slide {slide_index} with strategy: {strategy}")
+    return slide_manager.add_auto_fit_text(
+        slide_index, left, top, width, height, text,
+        strategy=strategy, font_size=font_size, font_name=font_name,
+        bold=bold, italic=italic, color=color, alignment=alignment,
+        create_new_slides=create_new_slides, slide_title_template=slide_title_template,
+        presentation_id=presentation_id
+    )
+
+
+# ============================================================================
 # HIGH-LEVEL LAYOUT ENGINE TOOLS
 # ============================================================================
 
