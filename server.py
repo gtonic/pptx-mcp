@@ -14,6 +14,7 @@ import logging
 from presentation_manager import presentation_manager
 from template_manager import template_manager
 from slide_manager import slide_manager
+from layout_manager import layout_manager
 from input_validator import validator, ValidationError
 from performance_optimizer import performance_monitor
 
@@ -438,8 +439,205 @@ def add_bullet_points(
 
 
 # ============================================================================
-# PERFORMANCE AND MONITORING TOOLS
+# HIGH-LEVEL LAYOUT ENGINE TOOLS
 # ============================================================================
+
+@mcp.tool()
+def add_grid_layout(
+    slide_index: int,
+    elements: List[Dict[str, Any]],
+    rows: int = 2,
+    cols: int = 2,
+    gap: float = 0.2,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Create elements arranged in a grid layout without specifying coordinates.
+    
+    The layout engine automatically calculates positions based on slide dimensions.
+    This is ideal for AI/LLM-generated content that works with structural descriptions.
+    
+    Args:
+        slide_index: Index of the target slide
+        elements: List of element dictionaries. Each element can have:
+            - content (required): Text content for the element
+            - element_type: 'textbox' or 'shape' (default: 'textbox')
+            - shape_type: For shapes: 'rectangle', 'rounded_rectangle', 'oval', etc.
+            - fill_color: RGB list [r, g, b] for shape fill
+            - text_color: RGB list [r, g, b] for text
+            - font_size: Font size in points
+            - bold: Boolean for bold text
+        rows: Number of rows in the grid (default: 2)
+        cols: Number of columns in the grid (default: 2)
+        gap: Gap between cells in inches (default: 0.2)
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with confirmation, layout info, and created shape indices
+        
+    Example:
+        add_grid_layout(0, [
+            {"content": "Q1", "fill_color": [79, 129, 189]},
+            {"content": "Q2", "fill_color": [192, 80, 77]},
+            {"content": "Q3", "fill_color": [155, 187, 89]},
+            {"content": "Q4", "fill_color": [128, 100, 162]}
+        ], rows=2, cols=2)
+    """
+    logger.info(f"Creating grid layout ({rows}x{cols}) with {len(elements)} elements on slide {slide_index}")
+    return layout_manager.create_grid_layout(
+        slide_index, elements, rows, cols, gap, 
+        presentation_id=presentation_id
+    )
+
+
+@mcp.tool()
+def add_list_layout(
+    slide_index: int,
+    elements: List[Dict[str, Any]],
+    direction: str = "vertical",
+    gap: float = 0.2,
+    alignment: str = "left",
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Create elements arranged in a list layout without specifying coordinates.
+    
+    The layout engine automatically calculates positions based on slide dimensions.
+    Perfect for bullet-point style content or horizontal feature comparisons.
+    
+    Args:
+        slide_index: Index of the target slide
+        elements: List of element dictionaries. Each element can have:
+            - content (required): Text content for the element
+            - element_type: 'textbox' or 'shape' (default: 'textbox')
+            - shape_type: For shapes: 'rectangle', 'rounded_rectangle', 'oval', etc.
+            - fill_color: RGB list [r, g, b] for shape fill
+            - text_color: RGB list [r, g, b] for text
+            - font_size: Font size in points
+            - bold: Boolean for bold text
+        direction: 'vertical' or 'horizontal' (default: 'vertical')
+        gap: Gap between items in inches (default: 0.2)
+        alignment: For vertical: 'left', 'center', 'right'
+                   For horizontal: 'top', 'middle', 'bottom' (default: 'left')
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with confirmation, layout info, and created shape indices
+        
+    Example:
+        add_list_layout(0, [
+            {"content": "Feature A: Performance improvements"},
+            {"content": "Feature B: New user interface"},
+            {"content": "Feature C: Enhanced security"}
+        ], direction="vertical", alignment="left")
+    """
+    logger.info(f"Creating {direction} list layout with {len(elements)} elements on slide {slide_index}")
+    return layout_manager.create_list_layout(
+        slide_index, elements, direction, gap, alignment,
+        presentation_id=presentation_id
+    )
+
+
+@mcp.tool()
+def add_hierarchy_layout(
+    slide_index: int,
+    root: Dict[str, Any],
+    level_gap: float = 0.8,
+    sibling_gap: float = 0.3,
+    show_connectors: bool = True,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Create elements arranged in a hierarchical/tree structure without specifying coordinates.
+    
+    The layout engine automatically calculates positions for org charts, taxonomies,
+    and other tree-like structures. Connectors are drawn automatically.
+    
+    Args:
+        slide_index: Index of the target slide
+        root: Root element dictionary with:
+            - content (required): Text content for the node
+            - children: Optional list of child nodes (same structure)
+            - element_type: 'textbox' or 'shape' (default: 'textbox')
+            - shape_type: For shapes: 'rectangle', 'rounded_rectangle', etc.
+            - fill_color: RGB list [r, g, b]
+        level_gap: Vertical gap between levels in inches (default: 0.8)
+        sibling_gap: Horizontal gap between siblings in inches (default: 0.3)
+        show_connectors: Whether to draw connecting lines (default: True)
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with confirmation, layout info, shapes, and connectors
+        
+    Example:
+        add_hierarchy_layout(0, {
+            "content": "CEO",
+            "children": [
+                {"content": "VP Sales", "children": [
+                    {"content": "Sales Team A"},
+                    {"content": "Sales Team B"}
+                ]},
+                {"content": "VP Engineering", "children": [
+                    {"content": "Frontend"},
+                    {"content": "Backend"}
+                ]}
+            ]
+        })
+    """
+    logger.info(f"Creating hierarchy layout on slide {slide_index}")
+    return layout_manager.create_hierarchy_layout(
+        slide_index, root, level_gap, sibling_gap, show_connectors,
+        presentation_id=presentation_id
+    )
+
+
+@mcp.tool()
+def add_flow_layout(
+    slide_index: int,
+    steps: List[Dict[str, Any]],
+    direction: str = "horizontal",
+    gap: float = 0.4,
+    show_connectors: bool = True,
+    connector_style: str = "arrow",
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Create elements arranged as a flow/process diagram without specifying coordinates.
+    
+    The layout engine automatically calculates positions for process flows,
+    workflows, and step-by-step diagrams with connecting arrows.
+    
+    Args:
+        slide_index: Index of the target slide
+        steps: List of step dictionaries. Each step can have:
+            - content (required): Text content for the step
+            - shape_type: Shape type (default: 'rounded_rectangle')
+            - fill_color: RGB list [r, g, b]
+            - text_color: RGB list [r, g, b]
+            - font_size: Font size in points
+        direction: 'horizontal' (left to right) or 'vertical' (top to bottom)
+        gap: Gap between steps in inches, includes connector space (default: 0.4)
+        show_connectors: Whether to draw connecting arrows (default: True)
+        connector_style: 'arrow', 'line', or 'none' (default: 'arrow')
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with confirmation, layout info, shapes, and connectors
+        
+    Example:
+        add_flow_layout(0, [
+            {"content": "Start"},
+            {"content": "Process Data"},
+            {"content": "Analyze Results"},
+            {"content": "Generate Report"},
+            {"content": "End"}
+        ], direction="horizontal", connector_style="arrow")
+    """
+    logger.info(f"Creating {direction} flow layout with {len(steps)} steps on slide {slide_index}")
+    return layout_manager.create_flow_layout(
+        slide_index, steps, direction, gap, show_connectors, connector_style,
+        presentation_id=presentation_id
+    )
 
 @mcp.tool()
 def get_performance_report() -> Dict[str, Any]:
