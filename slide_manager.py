@@ -147,8 +147,7 @@ class SlideManager:
         """
         try:
             pres = presentation_manager.get_presentation(presentation_id)
-            if not (0 <= slide_index < len(pres.slides)):
-                return {"error": f"Invalid slide index: {slide_index}"}
+            slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
             slide = pres.slides[slide_index]
             
             # Resolve semantic colors to RGB
@@ -172,7 +171,7 @@ class SlideManager:
                 fill_color=resolved_fill, line_color=resolved_line, line_width=line_width
             )
             return {"message": f"Added {shape_type} shape to slide {slide_index}", "shape_index": len(slide.shapes) - 1}
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, ValidationError) as e:
             return {"error": str(e)}
     
     def add_line(
@@ -194,8 +193,7 @@ class SlideManager:
         """
         try:
             pres = presentation_manager.get_presentation(presentation_id)
-            if not (0 <= slide_index < len(pres.slides)):
-                return {"error": f"Invalid slide index: {slide_index}"}
+            slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
             slide = pres.slides[slide_index]
             
             # Resolve semantic color to RGB
@@ -216,7 +214,7 @@ class SlideManager:
                 "message": f"Added line to slide {slide_index}",
                 "shape_index": len(slide.shapes) - 1
             }
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, ValidationError) as e:
             return {"error": str(e)}
 
 
@@ -264,8 +262,7 @@ class SlideManager:
         """Add a table to a slide."""
         try:
             pres = presentation_manager.get_presentation(presentation_id)
-            if not (0 <= slide_index < len(pres.slides)):
-                return {"error": f"Invalid slide index: {slide_index}"}
+            slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
             slide = pres.slides[slide_index]
             
             table = ppt_utils.add_table(slide, left, top, rows, cols, data)
@@ -273,7 +270,7 @@ class SlideManager:
                 "message": f"Added {rows}x{cols} table to slide {slide_index}",
                 "shape_index": len(slide.shapes) - 1
             }
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, ValidationError) as e:
             return {"error": str(e)}
     
     def add_image(
@@ -289,8 +286,7 @@ class SlideManager:
         """Add an image to a slide."""
         try:
             pres = presentation_manager.get_presentation(presentation_id)
-            if not (0 <= slide_index < len(pres.slides)):
-                return {"error": f"Invalid slide index: {slide_index}"}
+            slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
             slide = pres.slides[slide_index]
             
             # Ensure image path is in /data
@@ -302,7 +298,7 @@ class SlideManager:
                 "message": f"Added image to slide {slide_index}",
                 "shape_index": len(slide.shapes) - 1
             }
-        except (ValueError, KeyError, FileNotFoundError) as e:
+        except (ValueError, KeyError, FileNotFoundError, ValidationError) as e:
             return {"error": str(e)}
     
     def add_bullet_points(
@@ -316,8 +312,7 @@ class SlideManager:
         """Add bullet points to a placeholder on a slide."""
         try:
             pres = presentation_manager.get_presentation(presentation_id)
-            if not (0 <= slide_index < len(pres.slides)):
-                return {"error": f"Invalid slide index: {slide_index}"}
+            slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
             slide = pres.slides[slide_index]
             
             ppt_utils.create_bullet_points(slide, placeholder_idx, bullet_points, font_size)
@@ -325,7 +320,7 @@ class SlideManager:
                 "message": f"Added {len(bullet_points)} bullet points to slide {slide_index}",
                 "placeholder_index": placeholder_idx
             }
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, ValidationError) as e:
             return {"error": str(e)}
     
     @performance_monitor.track_operation("add_auto_fit_text")
