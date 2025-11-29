@@ -6,6 +6,13 @@ The server is built using Python with the **FastMCP** framework and the `python-
 
 ## ✨ New Features & Improvements
 
+### 🏗️ **High-Level Layout Engine** (NEW!)
+- **AI-Friendly Design**: Create complex layouts without specifying pixel coordinates
+- **Grid Layout**: Automatic grid arrangement for dashboard-style content
+- **List Layout**: Vertical and horizontal lists with automatic spacing
+- **Hierarchy Layout**: Organization charts and tree structures with connectors
+- **Flow Layout**: Process diagrams and workflows with arrows
+
 ### 🏗️ **Modular Architecture**
 - **Separation of Concerns**: Refactored into specialized modules for better maintainability
 - **Presentation Manager**: Centralized presentation lifecycle management
@@ -155,6 +162,79 @@ Professional data visualization and content creation tools.
     *   **Description:** Professional bullet point formatting in slide placeholders.
     *   **Features:** Template font integration, consistent bullet styling, automatic spacing.
 
+### 🤖 High-Level Layout Engine (NEW!)
+
+**AI-Friendly Layout Tools** - Create complex diagrams and layouts without specifying coordinates. The layout engine automatically calculates positions based on slide dimensions and structural descriptions.
+
+*   **`add_grid_layout(slide_index, elements, rows, cols, gap, ...) -> Dict`**
+    *   **Description:** Arrange elements in a grid without specifying coordinates.
+    *   **Parameters:**
+        *   `slide_index` (int): Target slide index.
+        *   `elements` (List): Element dictionaries with `content`, `fill_color`, `text_color`, etc.
+        *   `rows` (int): Number of grid rows (default: 2).
+        *   `cols` (int): Number of grid columns (default: 2).
+        *   `gap` (float): Gap between cells in inches (default: 0.2).
+    *   **Example:**
+        ```python
+        add_grid_layout(0, [
+            {"content": "Q1", "fill_color": [79, 129, 189]},
+            {"content": "Q2", "fill_color": [192, 80, 77]},
+            {"content": "Q3", "fill_color": [155, 187, 89]},
+            {"content": "Q4", "fill_color": [128, 100, 162]}
+        ], rows=2, cols=2)
+        ```
+
+*   **`add_list_layout(slide_index, elements, direction, gap, alignment, ...) -> Dict`**
+    *   **Description:** Arrange elements in a vertical or horizontal list.
+    *   **Parameters:**
+        *   `elements` (List): Element dictionaries.
+        *   `direction` (str): "vertical" or "horizontal".
+        *   `alignment` (str): "left", "center", "right" (vertical) or "top", "middle", "bottom" (horizontal).
+    *   **Example:**
+        ```python
+        add_list_layout(0, [
+            {"content": "Feature A"},
+            {"content": "Feature B"},
+            {"content": "Feature C"}
+        ], direction="vertical", alignment="left")
+        ```
+
+*   **`add_hierarchy_layout(slide_index, root, level_gap, sibling_gap, show_connectors, ...) -> Dict`**
+    *   **Description:** Create hierarchical/tree structures like organization charts.
+    *   **Parameters:**
+        *   `root` (Dict): Root node with `content` and optional `children` list.
+        *   `level_gap` (float): Vertical gap between levels in inches.
+        *   `sibling_gap` (float): Horizontal gap between siblings.
+        *   `show_connectors` (bool): Draw connecting lines (default: True).
+    *   **Example:**
+        ```python
+        add_hierarchy_layout(0, {
+            "content": "CEO",
+            "children": [
+                {"content": "VP Sales", "children": [
+                    {"content": "Team A"},
+                    {"content": "Team B"}
+                ]},
+                {"content": "VP Engineering"}
+            ]
+        })
+        ```
+
+*   **`add_flow_layout(slide_index, steps, direction, gap, show_connectors, connector_style, ...) -> Dict`**
+    *   **Description:** Create flow/process diagrams with connecting arrows.
+    *   **Parameters:**
+        *   `steps` (List): Step dictionaries with `content` and styling.
+        *   `direction` (str): "horizontal" or "vertical".
+        *   `connector_style` (str): "arrow", "line", or "none".
+    *   **Example:**
+        ```python
+        add_flow_layout(0, [
+            {"content": "Start"},
+            {"content": "Process"},
+            {"content": "End"}
+        ], direction="horizontal", connector_style="arrow")
+        ```
+
 ## 🚀 Professional Use Cases
 
 This enhanced server is designed for enterprise-level PowerPoint generation including:
@@ -164,15 +244,17 @@ This enhanced server is designed for enterprise-level PowerPoint generation incl
 - **Report Generation**: Automated reporting with tables and data insights  
 - **Marketing Materials**: Professional slide decks with images and styling
 - **Training Materials**: Educational content with bullet points and media
+- **AI-Generated Diagrams**: LLM-friendly layouts without coordinate specifications
 
 ## 🔧 Extensibility
 
 The modular architecture makes it easy to add new professional features:
 
-- Add new tools in the appropriate manager module (`presentation_manager.py`, `template_manager.py`, `slide_manager.py`)
+- Add new tools in the appropriate manager module (`presentation_manager.py`, `template_manager.py`, `slide_manager.py`, `layout_manager.py`)
 - Expose new functionality through `@mcp.tool()` decorated functions in `server.py`
 - Leverage the template system for consistent professional styling
 - Use the logging framework for debugging and monitoring
+- Extend the layout engine with new layout types
 
 ## 🎯 Migration Notes
 
