@@ -203,9 +203,18 @@ class LayoutEngine:
             
             defaults = self._get_default_styles()
             created_shapes = []
+            max_elements = rows * cols
+            
+            # Warn if more elements provided than grid can accommodate
+            if len(elements) > max_elements:
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Grid layout ({rows}x{cols}) can only fit {max_elements} elements, "
+                    f"but {len(elements)} were provided. Extra elements will be ignored."
+                )
             
             for i, elem_data in enumerate(elements):
-                if i >= rows * cols:
+                if i >= max_elements:
                     break  # Don't exceed grid capacity
                 
                 row = i // cols
@@ -438,9 +447,10 @@ class LayoutEngine:
                     
                     shape_index = self._add_element_to_slide(slide, elem)
                     
-                    # Store position for connector drawing
-                    node_id = node_data.get("_id", id(node_data))
-                    node_positions[node_id] = (x, y, node_width, node_height)
+                    # Store position for connector drawing (ID assigned by _flatten_hierarchy)
+                    node_id = node_data.get("_id")
+                    if node_id is not None:
+                        node_positions[node_id] = (x, y, node_width, node_height)
                     
                     created_shapes.append({
                         "index": shape_index,
@@ -469,22 +479,27 @@ class LayoutEngine:
             return {"error": str(e)}
     
     def _flatten_hierarchy(self, root: Dict[str, Any], level: int = 0,
-                          result: Optional[List[List[Dict]]] = None) -> List[List[Dict]]:
+                          result: Optional[List[List[Dict]]] = None,
+                          counter: Optional[List[int]] = None) -> List[List[Dict]]:
         """Flatten hierarchy tree into levels for positioning."""
         if result is None:
             result = []
+        if counter is None:
+            counter = [0]  # Use list to allow mutation in nested calls
         
         while len(result) <= level:
             result.append([])
         
-        # Add unique ID for tracking
-        root["_id"] = id(root)
+        # Assign unique sequential ID for reliable node tracking
+        node_id = counter[0]
+        counter[0] += 1
+        root["_id"] = node_id
         result[level].append(root)
         
         children = root.get("children", [])
         for child in children:
             child["_parent_id"] = root["_id"]
-            self._flatten_hierarchy(child, level + 1, result)
+            self._flatten_hierarchy(child, level + 1, result, counter)
         
         return result
     
@@ -672,6 +687,9 @@ class LayoutEngine:
         defaults: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Draw connecting lines/arrows between flow steps."""
+        from pptx.util import Inches
+        from pptx.enum.shapes import MSO_SHAPE
+        
         connectors = []
         is_horizontal = direction.lower() in ["horizontal", "left_to_right"]
         
@@ -693,32 +711,39 @@ class LayoutEngine:
                 y2 = pos2[1]  # Top edge
             
             if style == "arrow":
-                # Draw arrow (line with arrowhead shape)
-                # First draw the line
-                ppt_utils.add_line(
-                    slide, x1, y1, x2, y2,
-                    line_color=defaults.get("line_color"),
-                    line_width=2.0
-                )
-                
-                # Add small triangle as arrowhead
-                arrow_size = 0.15
+                # Use proper arrow shapes instead of triangles
+                # Calculate arrow dimensions and position
                 if is_horizontal:
-                    # Arrowhead pointing right
-                    ppt_utils.add_shape(
-                        slide, "triangle",
-                        x2 - arrow_size, y2 - arrow_size / 2,
-                        arrow_size, arrow_size,
-                        fill_color=defaults.get("line_color")
+                    arrow_width = x2 - x1
+                    arrow_height = 0.25
+                    arrow_left = x1
+                    arrow_top = y1 - arrow_height / 2
+                    # Use RIGHT_ARROW shape for horizontal flow
+                    arrow_shape = slide.shapes.add_shape(
+                        MSO_SHAPE.RIGHT_ARROW,
+                        Inches(arrow_left), Inches(arrow_top),
+                        Inches(arrow_width), Inches(arrow_height)
                     )
                 else:
-                    # Arrowhead pointing down
-                    ppt_utils.add_shape(
-                        slide, "triangle",
-                        x2 - arrow_size / 2, y2 - arrow_size,
-                        arrow_size, arrow_size,
-                        fill_color=defaults.get("line_color")
+                    arrow_width = 0.25
+                    arrow_height = y2 - y1
+                    arrow_left = x1 - arrow_width / 2
+                    arrow_top = y1
+                    # Use DOWN_ARROW shape for vertical flow
+                    arrow_shape = slide.shapes.add_shape(
+                        MSO_SHAPE.DOWN_ARROW,
+                        Inches(arrow_left), Inches(arrow_top),
+                        Inches(arrow_width), Inches(arrow_height)
                     )
+                
+                # Style the arrow
+                line_color = defaults.get("line_color", [0, 0, 0])
+                if arrow_shape.fill:
+                    arrow_shape.fill.solid()
+                    from pptx.dml.color import RGBColor
+                    arrow_shape.fill.fore_color.rgb = RGBColor(*line_color)
+                if arrow_shape.line:
+                    arrow_shape.line.fill.background()  # No outline
             else:
                 # Just draw a line
                 ppt_utils.add_line(
@@ -760,6 +785,9 @@ class LayoutEngine:
     
     def _add_element_to_slide(self, slide, elem: LayoutElement) -> int:
         """Add a layout element to a slide and return the shape index."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         if elem.element_type == "shape" and elem.shape_type:
             # Add shape with text
             shape = ppt_utils.add_shape(
@@ -769,25 +797,34 @@ class LayoutEngine:
                 line_color=elem.line_color
             )
             # Add text to the shape
-            if elem.content and hasattr(shape, 'text_frame'):
-                tf = shape.text_frame
-                tf.word_wrap = True
-                p = tf.paragraphs[0]
-                p.text = elem.content
-                if elem.alignment:
-                    from pptx.enum.text import PP_ALIGN
-                    p.alignment = getattr(PP_ALIGN, elem.alignment.upper(), PP_ALIGN.CENTER)
-                font = p.font
-                if elem.font_size:
-                    from pptx.util import Pt
-                    font.size = Pt(elem.font_size)
-                if elem.font_name:
-                    font.name = elem.font_name
-                if elem.bold is not None:
-                    font.bold = elem.bold
-                if elem.text_color:
-                    from pptx.dml.color import RGBColor
-                    font.color.rgb = RGBColor(*elem.text_color)
+            if elem.content:
+                if hasattr(shape, 'text_frame'):
+                    tf = shape.text_frame
+                    tf.word_wrap = True
+                    p = tf.paragraphs[0]
+                    p.text = elem.content
+                    if elem.alignment:
+                        from pptx.enum.text import PP_ALIGN
+                        # Validate alignment value
+                        alignment_upper = elem.alignment.upper()
+                        if hasattr(PP_ALIGN, alignment_upper):
+                            p.alignment = getattr(PP_ALIGN, alignment_upper)
+                        else:
+                            logger.warning(f"Invalid alignment '{elem.alignment}', using CENTER")
+                            p.alignment = PP_ALIGN.CENTER
+                    font = p.font
+                    if elem.font_size:
+                        from pptx.util import Pt
+                        font.size = Pt(elem.font_size)
+                    if elem.font_name:
+                        font.name = elem.font_name
+                    if elem.bold is not None:
+                        font.bold = elem.bold
+                    if elem.text_color:
+                        from pptx.dml.color import RGBColor
+                        font.color.rgb = RGBColor(*elem.text_color)
+                else:
+                    logger.warning(f"Shape type '{elem.shape_type}' does not support text_frame, text content ignored")
         else:
             # Add textbox
             ppt_utils.add_textbox(
