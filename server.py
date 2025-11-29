@@ -18,6 +18,7 @@ from layout_manager import layout_manager
 from input_validator import validator, ValidationError
 from performance_optimizer import performance_monitor
 from diagram_renderer import diagram_renderer
+from business_diagrams import business_diagrams
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -981,6 +982,210 @@ def add_diagram(
     return diagram_renderer.render_auto(
         slide_index=slide_index,
         diagram_code=diagram_code,
+        presentation_id=presentation_id
+    )
+
+
+# ============================================================================
+# SPECIALIZED BUSINESS DIAGRAM TOOLS
+# ============================================================================
+
+@mcp.tool()
+def create_swot_analysis(
+    slide_index: int,
+    strengths: List[str],
+    weaknesses: List[str],
+    opportunities: List[str],
+    threats: List[str],
+    title: Optional[str] = None,
+    show_labels: bool = True,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Create a professional SWOT analysis diagram from structured data.
+    
+    Automatically generates a 2x2 grid layout with professional styling:
+    - Top-left: Strengths (green)
+    - Top-right: Weaknesses (red)
+    - Bottom-left: Opportunities (blue)
+    - Bottom-right: Threats (yellow/orange)
+    
+    The AI only needs to provide the raw data lists - the visual arrangement,
+    colors, and positioning are handled automatically.
+    
+    Args:
+        slide_index: Index of the target slide
+        strengths: List of strength items (e.g., ["Strong brand", "Loyal customers"])
+        weaknesses: List of weakness items (e.g., ["High costs", "Limited reach"])
+        opportunities: List of opportunity items (e.g., ["New markets", "Digital growth"])
+        threats: List of threat items (e.g., ["Competition", "Regulations"])
+        title: Optional title for the SWOT diagram
+        show_labels: Whether to show category labels (Strengths, Weaknesses, etc.)
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with creation results including shape indices and item counts
+        
+    Example:
+        create_swot_analysis(
+            slide_index=0,
+            strengths=["Strong brand recognition", "Skilled workforce", "Patent portfolio"],
+            weaknesses=["High production costs", "Limited global presence"],
+            opportunities=["Emerging markets in Asia", "E-commerce expansion"],
+            threats=["Aggressive competitors", "Supply chain disruptions"],
+            title="Company SWOT Analysis"
+        )
+    """
+    logger.info(f"Creating SWOT analysis on slide {slide_index}")
+    return business_diagrams.create_swot_analysis(
+        slide_index=slide_index,
+        strengths=strengths,
+        weaknesses=weaknesses,
+        opportunities=opportunities,
+        threats=threats,
+        title=title,
+        show_labels=show_labels,
+        presentation_id=presentation_id
+    )
+
+
+@mcp.tool()
+def create_timeline(
+    slide_index: int,
+    events: List[Dict[str, Any]],
+    direction: str = "horizontal",
+    title: Optional[str] = None,
+    show_connector: bool = True,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Create a professional timeline diagram from a list of events.
+    
+    Automatically generates a timeline with:
+    - Central connector line
+    - Event markers (circles) at each point
+    - Labels with dates and descriptions
+    - Alternating positions for readability (horizontal mode)
+    
+    The AI only needs to provide the event data - layout and styling are automatic.
+    
+    Args:
+        slide_index: Index of the target slide
+        events: List of event dictionaries, each containing:
+            - label (required): Event name/title
+            - date (optional): Date or time period string
+            - description (optional): Additional details
+            - color (optional): Semantic tag ('success', 'warning') or RGB list [r, g, b]
+        direction: 'horizontal' (left to right) or 'vertical' (top to bottom)
+        title: Optional title for the timeline
+        show_connector: Whether to show the connecting line between events
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with creation results including shape indices and event count
+        
+    Example:
+        create_timeline(
+            slide_index=0,
+            events=[
+                {"label": "Project Kickoff", "date": "Jan 2024", "color": "success"},
+                {"label": "Phase 1 Complete", "date": "Mar 2024"},
+                {"label": "Beta Launch", "date": "May 2024"},
+                {"label": "GA Release", "date": "Jul 2024", "color": "accent"}
+            ],
+            direction="horizontal",
+            title="Product Roadmap 2024"
+        )
+    """
+    logger.info(f"Creating {direction} timeline on slide {slide_index}")
+    return business_diagrams.create_timeline(
+        slide_index=slide_index,
+        events=events,
+        direction=direction,
+        title=title,
+        show_connector=show_connector,
+        presentation_id=presentation_id
+    )
+
+
+@mcp.tool()
+def create_org_chart(
+    slide_index: int,
+    root: Dict[str, Any],
+    title: Optional[str] = None,
+    show_connectors: bool = True,
+    compact: bool = False,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Create a professional organization chart from hierarchical data.
+    
+    Automatically generates an org chart with:
+    - Rectangular boxes for each person/role
+    - Connecting lines between hierarchical levels
+    - Automatic positioning based on tree structure
+    - Name and title displayed in each box
+    
+    The AI only needs to provide the organizational hierarchy - all positioning
+    and styling is handled automatically.
+    
+    Args:
+        slide_index: Index of the target slide
+        root: Root node of the organization hierarchy:
+            {
+                "name": "Person Name",
+                "title": "Job Title (optional)",
+                "color": semantic tag or RGB list (optional),
+                "children": [
+                    {
+                        "name": "Child Name",
+                        "title": "Child Title",
+                        "children": [...] (nested children)
+                    }
+                ]
+            }
+        title: Optional title for the org chart
+        show_connectors: Whether to show connecting lines between levels
+        compact: Whether to use compact layout (smaller boxes, tighter spacing)
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with creation results including shape indices and level count
+        
+    Example:
+        create_org_chart(
+            slide_index=0,
+            root={
+                "name": "Sarah Johnson",
+                "title": "CEO",
+                "children": [
+                    {
+                        "name": "Mike Chen",
+                        "title": "VP Engineering",
+                        "children": [
+                            {"name": "Alice Wong", "title": "Tech Lead"},
+                            {"name": "Bob Smith", "title": "Senior Dev"}
+                        ]
+                    },
+                    {
+                        "name": "Emily Brown",
+                        "title": "VP Marketing",
+                        "children": [
+                            {"name": "Carol Davis", "title": "Marketing Manager"}
+                        ]
+                    }
+                ]
+            },
+            title="Company Organization"
+        )
+    """
+    logger.info(f"Creating org chart on slide {slide_index}")
+    return business_diagrams.create_org_chart(
+        slide_index=slide_index,
+        root=root,
+        title=title,
+        show_connectors=show_connectors,
+        compact=compact,
         presentation_id=presentation_id
     )
 
