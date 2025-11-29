@@ -2,8 +2,9 @@
 Slide Management Module
 
 Handles slide creation, manipulation, and content management with validation and performance monitoring.
+Now supports semantic styling tags for AI-friendly color and font selection.
 """
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 import os
 import ppt_utils
 from presentation_manager import presentation_manager
@@ -23,6 +24,14 @@ from text_autofit import (
 DEFAULT_AUTOFIT_CONFIG = AutoFitConfig()
 class SlideManager:
     """Manages slide operations within presentations."""
+    
+    def _resolve_color(self, color_input: Union[str, List[int], None]) -> Optional[List[int]]:
+        """
+        Resolve color input to RGB values.
+        
+        Accepts either a semantic tag (e.g., "accent", "critical") or RGB list.
+        """
+        return template_manager.resolve_color(color_input)
     
     @performance_monitor.track_operation("add_slide")
     def add_slide(self, layout_index: int = 1, title: Optional[str] = None, presentation_id: Optional[str] = None) -> Dict[str, Any]:
@@ -59,13 +68,19 @@ class SlideManager:
         text: str,
         font_size: Optional[int] = None,
         font_name: Optional[str] = None,
+        font_style: Optional[str] = None,
         bold: Optional[bool] = None,
         italic: Optional[bool] = None,
-        color: Optional[List[int]] = None,
+        color: Optional[Union[str, List[int]]] = None,
         alignment: Optional[str] = None,
         presentation_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Add a textbox to a slide, using template styles as defaults if available."""
+        """
+        Add a textbox to a slide, using template styles as defaults if available.
+        
+        Supports semantic color tags (e.g., "accent", "critical", "success") in addition
+        to RGB lists for the color parameter.
+        """
         try:
             pres = presentation_manager.get_presentation(presentation_id)
             
@@ -74,28 +89,38 @@ class SlideManager:
             left, top, width, height = validator.validate_dimensions(left, top, width, height)
             text = validator.validate_text(text)
             
-            if color:
-                color = validator.validate_color(color)
+            # Resolve semantic color to RGB if provided
+            resolved_color = self._resolve_color(color)
+            if resolved_color:
+                resolved_color = validator.validate_color(resolved_color)
             
             slide = pres.slides[slide_index]
             
             # Use template styles as defaults if not provided
-            font_defaults = template_manager.get_default_font_settings()
-            color_defaults = template_manager.get_default_color_settings()
+            font_settings = template_manager.resolve_font(
+                font_tag=font_style,
+                font_name=font_name,
+                font_size=font_size,
+                bold=bold,
+                italic=italic
+            )
             
-            if font_name is None:
-                font_name = font_defaults.get("body_font_name")
-            if font_size is None:
-                font_size = font_defaults.get("body_font_size")
-            if color is None:
+            final_font_name = font_settings.get("font_name")
+            final_font_size = font_settings.get("font_size")
+            final_bold = font_settings.get("bold")
+            final_italic = font_settings.get("italic")
+            
+            # Use resolved color or fallback to template default
+            if resolved_color is None:
+                color_defaults = template_manager.get_default_color_settings()
                 accent = color_defaults.get("accent_1")
                 if accent:
-                    color = list(accent)
+                    resolved_color = list(accent)
             
             ppt_utils.add_textbox(
                 slide, left, top, width, height, text,
-                font_size=font_size, font_name=font_name, bold=bold,
-                italic=italic, color=color, alignment=alignment
+                font_size=final_font_size, font_name=final_font_name, bold=final_bold,
+                italic=final_italic, color=resolved_color, alignment=alignment
             )
             return {"message": f"Added textbox to slide {slide_index}", "shape_index": len(slide.shapes) - 1}
         except (ValueError, KeyError, ValidationError) as e:
@@ -109,33 +134,42 @@ class SlideManager:
         top: float,
         width: float,
         height: float,
-        fill_color: Optional[List[int]] = None,
-        line_color: Optional[List[int]] = None,
+        fill_color: Optional[Union[str, List[int]]] = None,
+        line_color: Optional[Union[str, List[int]]] = None,
         line_width: Optional[float] = None,
         presentation_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Add an auto shape to a slide, using template styles as defaults if available."""
+        """
+        Add an auto shape to a slide, using template styles as defaults if available.
+        
+        Supports semantic color tags (e.g., "primary", "accent", "critical") in addition
+        to RGB lists for fill_color and line_color parameters.
+        """
         try:
             pres = presentation_manager.get_presentation(presentation_id)
             if not (0 <= slide_index < len(pres.slides)):
                 return {"error": f"Invalid slide index: {slide_index}"}
             slide = pres.slides[slide_index]
             
+            # Resolve semantic colors to RGB
+            resolved_fill = self._resolve_color(fill_color)
+            resolved_line = self._resolve_color(line_color)
+            
             # Use template styles as defaults if not provided
             color_defaults = template_manager.get_default_color_settings()
             
-            if fill_color is None:
+            if resolved_fill is None:
                 accent = color_defaults.get("accent_1")
                 if accent:
-                    fill_color = list(accent)
-            if line_color is None:
+                    resolved_fill = list(accent)
+            if resolved_line is None:
                 text1 = color_defaults.get("text_1")
                 if text1:
-                    line_color = list(text1)
+                    resolved_line = list(text1)
             
             ppt_utils.add_shape(
                 slide, shape_type, left, top, width, height,
-                fill_color=fill_color, line_color=line_color, line_width=line_width
+                fill_color=resolved_fill, line_color=resolved_line, line_width=line_width
             )
             return {"message": f"Added {shape_type} shape to slide {slide_index}", "shape_index": len(slide.shapes) - 1}
         except (ValueError, KeyError) as e:
@@ -148,27 +182,35 @@ class SlideManager:
         y1: float,
         x2: float,
         y2: float,
-        line_color: Optional[List[int]] = None,
+        line_color: Optional[Union[str, List[int]]] = None,
         line_width: Optional[float] = None,
         presentation_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Add a straight line to a slide."""
+        """
+        Add a straight line to a slide.
+        
+        Supports semantic color tags (e.g., "neutral", "accent") in addition
+        to RGB lists for the line_color parameter.
+        """
         try:
             pres = presentation_manager.get_presentation(presentation_id)
             if not (0 <= slide_index < len(pres.slides)):
                 return {"error": f"Invalid slide index: {slide_index}"}
             slide = pres.slides[slide_index]
             
+            # Resolve semantic color to RGB
+            resolved_color = self._resolve_color(line_color)
+            
             # Use template default colors if not provided
-            if line_color is None:
+            if resolved_color is None:
                 color_defaults = template_manager.get_default_color_settings()
                 text1 = color_defaults.get("text_1")
                 if text1:
-                    line_color = list(text1)
+                    resolved_color = list(text1)
             
             ppt_utils.add_line(
                 slide, x1, y1, x2, y2,
-                line_color=line_color, line_width=line_width
+                line_color=resolved_color, line_width=line_width
             )
             return {
                 "message": f"Added line to slide {slide_index}",
@@ -298,9 +340,10 @@ class SlideManager:
         strategy: str = "smart",
         font_size: Optional[int] = None,
         font_name: Optional[str] = None,
+        font_style: Optional[str] = None,
         bold: Optional[bool] = None,
         italic: Optional[bool] = None,
-        color: Optional[List[int]] = None,
+        color: Optional[Union[str, List[int]]] = None,
         alignment: Optional[str] = None,
         create_new_slides: bool = True,
         slide_title_template: Optional[str] = None,
@@ -312,6 +355,8 @@ class SlideManager:
         When AI-generated content is extensive, this method automatically adjusts
         font size, uses multi-column layout, or splits content across slides.
         
+        Supports semantic styling tags for colors and fonts.
+        
         Args:
             slide_index: Index of the target slide
             left: Left position in inches
@@ -322,9 +367,10 @@ class SlideManager:
             strategy: Auto-fit strategy ('smart', 'shrink_font', 'multi_column', 'split_slides')
             font_size: Optional preferred font size in points
             font_name: Optional font name
+            font_style: Optional semantic font style tag (e.g., "body", "heading", "title")
             bold: Optional bold formatting
             italic: Optional italic formatting
-            color: Optional text color as RGB list [r, g, b]
+            color: Optional text color as semantic tag (e.g., "accent", "text") or RGB list [r, g, b]
             alignment: Optional text alignment (left, center, right, justify)
             create_new_slides: Whether to create new slides if content is split
             slide_title_template: Title template for new slides (use {page} for page number)
@@ -341,19 +387,30 @@ class SlideManager:
             left, top, width, height = validator.validate_dimensions(left, top, width, height)
             text = validator.validate_text(text)
             
-            if color:
-                color = validator.validate_color(color)
+            # Resolve semantic color to RGB
+            resolved_color = self._resolve_color(color)
+            if resolved_color:
+                resolved_color = validator.validate_color(resolved_color)
             
-            # Use template styles as defaults if not provided
-            font_defaults = template_manager.get_default_font_settings()
-            color_defaults = template_manager.get_default_color_settings()
+            # Resolve font settings using semantic font style
+            font_settings = template_manager.resolve_font(
+                font_tag=font_style,
+                font_name=font_name,
+                font_size=font_size,
+                bold=bold,
+                italic=italic
+            )
             
-            if font_name is None:
-                font_name = font_defaults.get("body_font_name")
-            if color is None:
+            final_font_name = font_settings.get("font_name")
+            final_bold = font_settings.get("bold")
+            final_italic = font_settings.get("italic")
+            
+            # Use resolved color or fallback to template default
+            if resolved_color is None:
+                color_defaults = template_manager.get_default_color_settings()
                 accent = color_defaults.get("accent_1")
                 if accent:
-                    color = list(accent)
+                    resolved_color = list(accent)
             
             # Parse strategy
             strategy_map = {
@@ -393,8 +450,8 @@ class SlideManager:
                     
                     ppt_utils.add_textbox(
                         slide, col_left, top, result.column_width, height, col_text,
-                        font_size=result.font_size, font_name=font_name, bold=bold,
-                        italic=italic, color=color, alignment=alignment
+                        font_size=result.font_size, font_name=final_font_name, bold=final_bold,
+                        italic=final_italic, color=resolved_color, alignment=alignment
                     )
                     created_shapes.append({
                         "slide_index": slide_index,
@@ -441,8 +498,8 @@ class SlideManager:
                     
                     ppt_utils.add_textbox(
                         current_slide, left, top, width, height, segment_text,
-                        font_size=result.font_size, font_name=font_name, bold=bold,
-                        italic=italic, color=color, alignment=alignment
+                        font_size=result.font_size, font_name=final_font_name, bold=final_bold,
+                        italic=final_italic, color=resolved_color, alignment=alignment
                     )
                     created_shapes.append({
                         "slide_index": current_slide_index,
@@ -454,8 +511,8 @@ class SlideManager:
                 slide = pres.slides[slide_index]
                 ppt_utils.add_textbox(
                     slide, left, top, width, height, result.text_segments[0],
-                    font_size=result.font_size, font_name=font_name, bold=bold,
-                    italic=italic, color=color, alignment=alignment
+                    font_size=result.font_size, font_name=final_font_name, bold=final_bold,
+                    italic=final_italic, color=resolved_color, alignment=alignment
                 )
                 created_shapes.append({
                     "slide_index": slide_index,
