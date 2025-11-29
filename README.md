@@ -6,7 +6,13 @@ The server is built using Python with the **FastMCP** framework and the `python-
 
 ## ✨ New Features & Improvements
 
-### 📊 **Diagram Support (Mermaid/PlantUML)** (NEW!)
+### 📈 **Specialized Business Diagrams** (NEW!)
+- **SWOT Analysis**: Create professional 2x2 SWOT diagrams from structured lists
+- **Timeline**: Generate horizontal/vertical timelines from event data
+- **Organization Chart**: Build org charts from hierarchical data structures
+- **AI-Friendly**: Just provide the raw data - layout and styling are automatic
+
+### 📊 **Diagram Support (Mermaid/PlantUML)**
 - **Text-Based Diagrams**: Parse Mermaid and PlantUML syntax directly into editable PowerPoint shapes
 - **AI-Friendly DSLs**: Let AI describe diagrams in familiar text formats instead of specifying individual shapes
 - **Native Vector Output**: All diagrams are rendered as editable PowerPoint shapes, not images
@@ -342,6 +348,111 @@ These tools allow AI/LLM workflows to create diagrams using familiar text-based 
             stop
             @enduml
         ''')
+        ```
+
+### 📈 Specialized Business Diagrams (NEW!)
+
+High-level APIs for creating common business diagram types from structured data. The AI only needs to provide the raw data (JSON/Dict) - the visual arrangement, colors, and positioning are handled automatically.
+
+*   **`create_swot_analysis(slide_index, strengths, weaknesses, opportunities, threats, ...) -> Dict`**
+    *   **Description:** Create a professional SWOT analysis diagram from structured data.
+    *   **Features:**
+        *   Automatic 2x2 grid layout with professional styling
+        *   Color-coded quadrants (Strengths=green, Weaknesses=red, Opportunities=blue, Threats=yellow)
+        *   Optional title and category labels
+    *   **Parameters:**
+        *   `strengths` (List[str]): List of strength items
+        *   `weaknesses` (List[str]): List of weakness items
+        *   `opportunities` (List[str]): List of opportunity items
+        *   `threats` (List[str]): List of threat items
+        *   `title` (Optional[str]): Diagram title
+        *   `show_labels` (bool): Whether to show category labels (default: True)
+    *   **Example:**
+        ```python
+        create_swot_analysis(
+            slide_index=0,
+            strengths=["Strong brand", "Skilled workforce", "Patent portfolio"],
+            weaknesses=["High production costs", "Limited global presence"],
+            opportunities=["Emerging markets in Asia", "E-commerce expansion"],
+            threats=["Aggressive competitors", "Supply chain disruptions"],
+            title="Company SWOT Analysis"
+        )
+        ```
+
+*   **`create_timeline(slide_index, events, direction, ...) -> Dict`**
+    *   **Description:** Create a professional timeline diagram from a list of events.
+    *   **Features:**
+        *   Horizontal or vertical layout
+        *   Central connector line with event markers
+        *   Labels with dates and descriptions
+        *   Custom colors per event using semantic tags or RGB
+    *   **Parameters:**
+        *   `events` (List[Dict]): List of event dictionaries, each with:
+            *   `label` (required): Event name/title
+            *   `date` (optional): Date or time period
+            *   `description` (optional): Additional details
+            *   `color` (optional): Semantic tag ('success', 'warning') or RGB list
+        *   `direction` (str): 'horizontal' or 'vertical' (default: 'horizontal')
+        *   `title` (Optional[str]): Timeline title
+        *   `show_connector` (bool): Show connecting line (default: True)
+    *   **Example:**
+        ```python
+        create_timeline(
+            slide_index=0,
+            events=[
+                {"label": "Project Kickoff", "date": "Jan 2024", "color": "success"},
+                {"label": "Phase 1 Complete", "date": "Mar 2024"},
+                {"label": "Beta Launch", "date": "May 2024"},
+                {"label": "GA Release", "date": "Jul 2024", "color": "accent"}
+            ],
+            direction="horizontal",
+            title="Product Roadmap 2024"
+        )
+        ```
+
+*   **`create_org_chart(slide_index, root, ...) -> Dict`**
+    *   **Description:** Create a professional organization chart from hierarchical data.
+    *   **Features:**
+        *   Automatic tree layout with connecting lines
+        *   Rectangular boxes with name and title
+        *   Support for multiple levels of hierarchy
+        *   Compact mode for larger organizations
+    *   **Parameters:**
+        *   `root` (Dict): Root node with:
+            *   `name` (required): Person name
+            *   `title` (optional): Job title
+            *   `children` (optional): List of child nodes (same structure)
+            *   `color` (optional): Semantic tag or RGB list
+        *   `title` (Optional[str]): Chart title
+        *   `show_connectors` (bool): Show connecting lines (default: True)
+        *   `compact` (bool): Use compact layout (default: False)
+    *   **Example:**
+        ```python
+        create_org_chart(
+            slide_index=0,
+            root={
+                "name": "Sarah Johnson",
+                "title": "CEO",
+                "children": [
+                    {
+                        "name": "Mike Chen",
+                        "title": "VP Engineering",
+                        "children": [
+                            {"name": "Alice Wong", "title": "Tech Lead"},
+                            {"name": "Bob Smith", "title": "Senior Dev"}
+                        ]
+                    },
+                    {
+                        "name": "Emily Brown",
+                        "title": "VP Marketing",
+                        "children": [
+                            {"name": "Carol Davis", "title": "Marketing Manager"}
+                        ]
+                    }
+                ]
+            },
+            title="Company Organization"
+        )
         ```
 
 ## 🚀 Professional Use Cases
