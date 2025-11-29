@@ -14,10 +14,13 @@ from text_autofit import (
     text_autofit_engine, 
     AutoFitStrategy, 
     ContainerDimensions,
-    AutoFitResult
+    AutoFitResult,
+    AutoFitConfig
 )
 
 
+# Default auto-fit configuration for slide manager
+DEFAULT_AUTOFIT_CONFIG = AutoFitConfig()
 class SlideManager:
     """Manages slide operations within presentations."""
     
@@ -433,8 +436,8 @@ class SlideManager:
                             # Don't create new slides, put all on original
                             current_slide = pres.slides[slide_index]
                             current_slide_index = slide_index
-                            # Adjust top position for stacking
-                            top = top + height + 0.2
+                            # Adjust top position for stacking using configurable gap
+                            top = top + height + DEFAULT_AUTOFIT_CONFIG.stacking_gap
                     
                     ppt_utils.add_textbox(
                         current_slide, left, top, width, height, segment_text,

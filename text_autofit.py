@@ -62,6 +62,7 @@ class AutoFitConfig:
     bullet_indent: float = 0.25  # Bullet indentation in inches
     chars_per_inch: float = 7.0  # Approximate characters per inch at 18pt
     points_per_inch: float = 72.0  # Points per inch
+    stacking_gap: float = 0.2  # Gap between stacked elements in inches
 
 
 @dataclass
@@ -140,6 +141,10 @@ class TextAutoFitEngine:
         Returns:
             Estimated number of lines needed
         """
+        # Validate font_size to prevent division by zero
+        if font_size <= 0:
+            font_size = self.config.default_font_size
+        
         # Adjust chars per inch based on font size relative to default
         scale_factor = self.config.default_font_size / font_size
         chars_per_inch = self.config.chars_per_inch * scale_factor
@@ -371,21 +376,27 @@ class TextAutoFitEngine:
         # Check if 2 columns would work
         col2_width = (container.width - self.config.column_gap) / 2
         if col2_width >= self.config.min_column_width:
-            lines_per_column = self.estimate_lines_needed(
-                metrics.text, col2_width, font_size
-            ) / 2  # Approximately half the content per column
+            # Use actual split text for more accurate line estimation
+            col2_segments = self.split_into_columns(metrics.text, 2)
+            max_lines_col2 = max(
+                self.estimate_lines_needed(seg, col2_width, font_size)
+                for seg in col2_segments
+            )
             
-            if lines_per_column <= self.config.max_lines_per_slide:
+            if max_lines_col2 <= self.config.max_lines_per_slide:
                 return 2
         
         # Check if 3 columns would work
         col3_width = (container.width - 2 * self.config.column_gap) / 3
         if col3_width >= self.config.min_column_width:
-            lines_per_column = self.estimate_lines_needed(
-                metrics.text, col3_width, font_size
-            ) / 3
+            # Use actual split text for more accurate line estimation
+            col3_segments = self.split_into_columns(metrics.text, 3)
+            max_lines_col3 = max(
+                self.estimate_lines_needed(seg, col3_width, font_size)
+                for seg in col3_segments
+            )
             
-            if lines_per_column <= self.config.max_lines_per_slide:
+            if max_lines_col3 <= self.config.max_lines_per_slide:
                 return 3
         
         # Default to 2 columns if none fit perfectly
