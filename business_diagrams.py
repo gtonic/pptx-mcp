@@ -17,6 +17,10 @@ from typing import Optional, Dict, Any, List, Union
 from dataclasses import dataclass
 import logging
 
+from pptx.util import Pt
+from pptx.dml.color import RGBColor
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+
 from presentation_manager import presentation_manager
 from layout_manager import layout_manager, LayoutBounds
 from template_manager import template_manager
@@ -94,7 +98,18 @@ class BusinessDiagramsEngine:
     """
     
     def _resolve_color(self, color_input: Union[str, List[int], None]) -> Optional[List[int]]:
-        """Resolve color input to RGB values."""
+        """
+        Resolve color input to RGB values.
+        
+        Args:
+            color_input: Can be one of:
+                - A semantic tag string (e.g., "accent", "critical", "success", "primary")
+                - An RGB list [r, g, b] where each value is 0-255
+                - None (returns None)
+                
+        Returns:
+            RGB color as list [r, g, b] or None if input was None
+        """
         return template_manager.resolve_color(color_input)
     
     def _get_slide_bounds(self, presentation_id: Optional[str] = None) -> LayoutBounds:
@@ -206,10 +221,6 @@ class BusinessDiagramsEngine:
                 
                 # Add text to the shape
                 if hasattr(shape, 'text_frame'):
-                    from pptx.util import Pt
-                    from pptx.dml.color import RGBColor
-                    from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
-                    
                     tf = shape.text_frame
                     tf.word_wrap = True
                     tf.auto_size = None
@@ -221,8 +232,8 @@ class BusinessDiagramsEngine:
                     p.font.size = Pt(11)
                     p.font.color.rgb = RGBColor(255, 255, 255)
                     
-                    # If show_labels, make the first line bold
-                    if show_labels and p.runs:
+                    # If show_labels, make the first line bold (check runs is not empty)
+                    if show_labels and p.runs and len(p.runs) > 0:
                         p.runs[0].font.bold = True
                 
                 created_shapes.append({
@@ -570,7 +581,9 @@ class BusinessDiagramsEngine:
                     slide, bounds.left, bounds.top - 0.2, bounds.width, title_height, title,
                     font_size=24, bold=True, alignment="center"
                 )
-                # Create new bounds with adjusted top
+                # Create new LayoutBounds object rather than modifying in-place.
+                # LayoutBounds is a dataclass that may be shared/cached by the layout manager,
+                # so we create a new instance to avoid side effects.
                 bounds = LayoutBounds(
                     left=bounds.left,
                     top=bounds.top + title_height,

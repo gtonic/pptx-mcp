@@ -21,15 +21,19 @@ from business_diagrams import (
 )
 
 
+# Slide layout index for blank slides in default PowerPoint templates
+BLANK_SLIDE_LAYOUT_INDEX = 6
+
+
 class TestSWOTAnalysis(unittest.TestCase):
     """Tests for SWOT analysis creation."""
     
     def setUp(self):
         """Set up test fixtures."""
         self.engine = BusinessDiagramsEngine()
-        # Create a mock presentation
+        # Create a mock presentation with a blank slide
         self.pres = Presentation()
-        self.pres.slides.add_slide(self.pres.slide_layouts[6])  # Blank layout
+        self.pres.slides.add_slide(self.pres.slide_layouts[BLANK_SLIDE_LAYOUT_INDEX])
     
     @patch('business_diagrams.presentation_manager')
     def test_create_swot_basic(self, mock_pm):
@@ -124,7 +128,7 @@ class TestTimeline(unittest.TestCase):
         """Set up test fixtures."""
         self.engine = BusinessDiagramsEngine()
         self.pres = Presentation()
-        self.pres.slides.add_slide(self.pres.slide_layouts[6])
+        self.pres.slides.add_slide(self.pres.slide_layouts[BLANK_SLIDE_LAYOUT_INDEX])
     
     @patch('business_diagrams.presentation_manager')
     def test_create_horizontal_timeline(self, mock_pm):
@@ -238,7 +242,7 @@ class TestOrgChart(unittest.TestCase):
         """Set up test fixtures."""
         self.engine = BusinessDiagramsEngine()
         self.pres = Presentation()
-        self.pres.slides.add_slide(self.pres.slide_layouts[6])
+        self.pres.slides.add_slide(self.pres.slide_layouts[BLANK_SLIDE_LAYOUT_INDEX])
     
     @patch('business_diagrams.presentation_manager')
     @patch('business_diagrams.layout_manager')
