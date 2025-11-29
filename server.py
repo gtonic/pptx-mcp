@@ -4,8 +4,6 @@ PowerPoint MCP Server
 A Model Context Protocol server for creating and manipulating Microsoft PowerPoint presentations.
 This server provides professional PowerPoint generation capabilities using the FastMCP framework.
 """
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from mcp.server.fastmcp import FastMCP
 from typing import Optional, Dict, Any, List, Union
 import logging
@@ -25,36 +23,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create the MCP app with better naming and description
+# streamable_http_path="/mcp" is the default endpoint for Streamable HTTP
 mcp = FastMCP(
     name="PowerPoint MCP Server",
-    instructions="A professional PowerPoint presentation generation server supporting templates, styling, and advanced content creation."
+    instructions="A professional PowerPoint presentation generation server supporting templates, styling, and advanced content creation.",
+    host="0.0.0.0",
+    port=8081,
+    streamable_http_path="/mcp",
 )
-mcp_app = mcp.sse_app()
-
-# Create the FastAPI app with metadata
-app = FastAPI(
-    title="PowerPoint MCP Server",
-    description="Professional PowerPoint presentation generation via Model Context Protocol",
-    version="2.0.0"
-)
-
-# Enable CORS for all origins (for development; restrict in production as needed)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Add the /.well-known/wingman endpoint to the FastAPI app
-@app.get("/.well-known/wingman")
-async def wingman_well_known():
-    """Wingman discovery endpoint."""
-    return {}
-
-# Add all MCP routes to the FastAPI app at root
-app.router.routes.extend(mcp_app.routes)
 # ============================================================================
 # TEMPLATE MANAGEMENT TOOLS
 # ============================================================================
@@ -1195,6 +1171,6 @@ def create_org_chart(
 # ============================================================================
 
 if __name__ == "__main__":
-    import uvicorn
     logger.info("Starting PowerPoint MCP Server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Use the built-in run method with streamable-http transport
+    mcp.run(transport="streamable-http")

@@ -24,8 +24,8 @@
             ],
             "disabled": false,
             "timeout": 60,
-            "type": "sse",
-            "url": "http://localhost:8081/sse"
+            "type": "streamable-http",
+            "url": "http://localhost:8081/mcp"
         }
     }
 }
