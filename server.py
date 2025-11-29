@@ -7,7 +7,7 @@ This server provides professional PowerPoint generation capabilities using the F
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mcp.server.fastmcp import FastMCP
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 import logging
 
 # Import our modular components
@@ -121,8 +121,8 @@ def get_semantic_tags() -> Dict[str, Any]:
     return {
         "color_tags": template_manager.get_semantic_color_tags(),
         "font_tags": template_manager.get_semantic_font_tags(),
-        "color_palette": template_manager._style_resolver.get_color_palette(),
-        "font_styles": template_manager._style_resolver.get_font_styles()
+        "color_palette": template_manager.get_color_palette(),
+        "font_styles": template_manager.get_font_styles()
     }
 
 
@@ -254,7 +254,7 @@ def add_textbox(
     font_style: Optional[str] = None,
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
-    color: Optional[str] = None,
+    color: Optional[Union[str, List[int]]] = None,
     alignment: Optional[str] = None,
     presentation_id: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -303,8 +303,8 @@ def add_shape(
     top: float,
     width: float,
     height: float,
-    fill_color: Optional[str] = None,
-    line_color: Optional[str] = None,
+    fill_color: Optional[Union[str, List[int]]] = None,
+    line_color: Optional[Union[str, List[int]]] = None,
     line_width: Optional[float] = None,
     presentation_id: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -346,7 +346,7 @@ def add_line(
     y1: float,
     x2: float,
     y2: float,
-    line_color: Optional[str] = None,
+    line_color: Optional[Union[str, List[int]]] = None,
     line_width: Optional[float] = None,
     presentation_id: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -521,7 +521,7 @@ def add_auto_fit_text(
     font_style: Optional[str] = None,
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
-    color: Optional[str] = None,
+    color: Optional[Union[str, List[int]]] = None,
     alignment: Optional[str] = None,
     create_new_slides: bool = True,
     slide_title_template: Optional[str] = None,

@@ -136,6 +136,24 @@ class TemplateManager:
     def get_semantic_font_tags(self) -> List[str]:
         """Get list of all available semantic font tags."""
         return self._style_resolver.get_available_font_tags()
+    
+    def get_color_palette(self) -> Dict[str, List[int]]:
+        """
+        Get the complete color palette for the current theme.
+        
+        Returns:
+            Dict mapping semantic tags to RGB colors
+        """
+        return self._style_resolver.get_color_palette()
+    
+    def get_font_styles(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Get all font styles for the current theme.
+        
+        Returns:
+            Dict mapping semantic font tags to font properties
+        """
+        return self._style_resolver.get_font_styles()
 
 
 # Global instance
