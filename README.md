@@ -6,6 +6,12 @@ The server is built using Python with the **FastMCP** framework and the `python-
 
 ## ✨ New Features & Improvements
 
+### 🧠 **Intelligent Text Auto-Fit** (NEW!)
+- **Smart Content Handling**: Automatically adjusts font size, columns, or slide splits for extensive AI-generated content
+- **Multi-Column Layout**: Distributes long text across columns for better readability
+- **Auto Slide Splitting**: Intelligently splits content across multiple slides when needed
+- **Maximum Readability**: Ensures optimal text presentation without manual formatting
+
 ### 🏗️ **High-Level Layout Engine** (NEW!)
 - **AI-Friendly Design**: Create complex layouts without specifying pixel coordinates
 - **Grid Layout**: Automatic grid arrangement for dashboard-style content
@@ -138,6 +144,34 @@ Professional text formatting and shape creation with template integration.
 *   **`add_line(...) -> Dict`**
     *   **Description:** Precise line drawing with professional styling options.
     *   **Enhanced Features:** Template color defaults, customizable line weights and styles.
+
+### 🧠 Intelligent Text Auto-Fit (NEW!)
+
+**AI-Optimized Text Handling** - Automatically adjusts text presentation for extensive AI-generated content. Maximizes readability and creates sensible slide divisions for large data sets.
+
+*   **`add_auto_fit_text(slide_index, left, top, width, height, text, strategy, ...) -> Dict`**
+    *   **Description:** Add text with intelligent auto-fit that handles extensive content.
+    *   **Strategies:**
+        *   `smart`: Automatically choose the best approach (default)
+        *   `shrink_font`: Reduce font size to fit content
+        *   `multi_column`: Split content into multiple columns
+        *   `split_slides`: Distribute content across multiple slides
+    *   **Features:**
+        *   Automatic font size calculation based on content and container
+        *   Multi-column layout for better readability
+        *   Automatic slide splitting with customizable titles
+        *   Preserves paragraphs and logical content sections
+    *   **Example:**
+        ```python
+        add_auto_fit_text(
+            slide_index=0,
+            left=0.5, top=1.5, width=9.0, height=5.0,
+            text="Very long AI-generated content...",
+            strategy="smart",
+            create_new_slides=True,
+            slide_title_template="Content (Page {page})"
+        )
+        ```
 
 ### 📊 Advanced Content Tools (NEW!)
 
