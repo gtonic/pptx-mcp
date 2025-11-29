@@ -7,7 +7,7 @@ This server provides professional PowerPoint generation capabilities using the F
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mcp.server.fastmcp import FastMCP
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 import logging
 
 # Import our modular components
@@ -77,9 +77,53 @@ def get_template_styles() -> Dict[str, Any]:
     Get the currently loaded template styles.
     
     Returns:
-        Dictionary containing current template path and extracted styles
+        Dictionary containing current template path, extracted styles,
+        and available semantic color/font tags with their current values
     """
     return template_manager.get_template_styles()
+
+
+@mcp.tool()
+def get_semantic_tags() -> Dict[str, Any]:
+    """
+    Get all available semantic styling tags and their current values.
+    
+    This tool returns the semantic color and font tags that can be used
+    instead of hard-coded values. The values are mapped to the current
+    template/theme or sensible defaults.
+    
+    Returns:
+        Dictionary with:
+            - color_tags: List of available semantic color tags
+            - font_tags: List of available semantic font tags
+            - color_palette: Current color values for each semantic tag
+            - font_styles: Current font settings for each semantic tag
+            
+    Example color tags:
+        - 'primary': Main brand/theme color
+        - 'secondary': Secondary accent color
+        - 'accent': Highlight/emphasis color
+        - 'success': Positive/success state (green)
+        - 'warning': Warning/caution state (yellow/orange)
+        - 'critical': Error/danger state (red)
+        - 'info': Informational content (blue)
+        - 'neutral': Neutral/gray elements
+        - 'text': Default text color
+        - 'background': Background color
+        
+    Example font tags:
+        - 'title': Large title text style
+        - 'heading': Section heading style
+        - 'body': Main body text style
+        - 'caption': Small caption/note style
+        - 'code': Monospace code style
+    """
+    return {
+        "color_tags": template_manager.get_semantic_color_tags(),
+        "font_tags": template_manager.get_semantic_font_tags(),
+        "color_palette": template_manager.get_color_palette(),
+        "font_styles": template_manager.get_font_styles()
+    }
 
 
 # ============================================================================
@@ -207,14 +251,18 @@ def add_textbox(
     text: str,
     font_size: Optional[int] = None,
     font_name: Optional[str] = None,
+    font_style: Optional[str] = None,
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
-    color: Optional[List[int]] = None,
+    color: Optional[Union[str, List[int]]] = None,
     alignment: Optional[str] = None,
     presentation_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Add a textbox to a slide with professional formatting options.
+    
+    Supports semantic styling tags for colors and fonts, allowing AI models to
+    use meaningful names instead of hard-coded values.
     
     Args:
         slide_index: Index of the target slide
@@ -225,19 +273,24 @@ def add_textbox(
         text: Text content for the textbox
         font_size: Optional font size in points
         font_name: Optional font name (defaults to template or Calibri)
+        font_style: Optional semantic font style tag ('title', 'heading', 'body', 'caption', 'code')
         bold: Optional bold formatting
         italic: Optional italic formatting
-        color: Optional text color as RGB list [r, g, b]
+        color: Optional text color - can be a semantic tag ('primary', 'accent', 'critical', 
+               'success', 'warning', 'text', 'neutral') or RGB list [r, g, b]
         alignment: Optional text alignment (left, center, right, justify)
         presentation_id: Optional ID of the target presentation
         
     Returns:
         Dictionary with confirmation message and shape index
+        
+    Example with semantic tags:
+        add_textbox(0, 1, 1, 4, 1, "Important!", color="critical", font_style="heading")
     """
     logger.info(f"Adding textbox to slide {slide_index}")
     return slide_manager.add_textbox(
         slide_index, left, top, width, height, text,
-        font_size=font_size, font_name=font_name, bold=bold,
+        font_size=font_size, font_name=font_name, font_style=font_style, bold=bold,
         italic=italic, color=color, alignment=alignment,
         presentation_id=presentation_id
     )
@@ -250,13 +303,15 @@ def add_shape(
     top: float,
     width: float,
     height: float,
-    fill_color: Optional[List[int]] = None,
-    line_color: Optional[List[int]] = None,
+    fill_color: Optional[Union[str, List[int]]] = None,
+    line_color: Optional[Union[str, List[int]]] = None,
     line_width: Optional[float] = None,
     presentation_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Add an auto shape to a slide with professional styling.
+    
+    Supports semantic color tags for fill and line colors.
     
     Args:
         slide_index: Index of the target slide
@@ -265,13 +320,17 @@ def add_shape(
         top: Top position in inches
         width: Width in inches
         height: Height in inches
-        fill_color: Optional fill color as RGB list [r, g, b]
-        line_color: Optional line color as RGB list [r, g, b]
+        fill_color: Optional fill color - can be a semantic tag ('primary', 'accent', 
+                   'success', 'warning', 'critical', 'neutral') or RGB list [r, g, b]
+        line_color: Optional line color - same options as fill_color
         line_width: Optional line width in points
         presentation_id: Optional ID of the target presentation
         
     Returns:
         Dictionary with confirmation message and shape index
+        
+    Example with semantic tags:
+        add_shape(0, "rectangle", 1, 1, 2, 2, fill_color="accent", line_color="neutral")
     """
     logger.info(f"Adding {shape_type} shape to slide {slide_index}")
     return slide_manager.add_shape(
@@ -287,12 +346,14 @@ def add_line(
     y1: float,
     x2: float,
     y2: float,
-    line_color: Optional[List[int]] = None,
+    line_color: Optional[Union[str, List[int]]] = None,
     line_width: Optional[float] = None,
     presentation_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Add a straight line to a slide.
+    
+    Supports semantic color tags for line color.
     
     Args:
         slide_index: Index of the target slide
@@ -300,12 +361,16 @@ def add_line(
         y1: Starting Y coordinate in inches
         x2: Ending X coordinate in inches
         y2: Ending Y coordinate in inches
-        line_color: Optional line color as RGB list [r, g, b]
+        line_color: Optional line color - can be a semantic tag ('neutral', 'accent', 
+                   'text') or RGB list [r, g, b]
         line_width: Optional line width in points
         presentation_id: Optional ID of the target presentation
         
     Returns:
         Dictionary with confirmation message and shape index
+        
+    Example with semantic tags:
+        add_line(0, 1, 1, 5, 1, line_color="neutral")
     """
     logger.info(f"Adding line to slide {slide_index}")
     return slide_manager.add_line(
@@ -453,9 +518,10 @@ def add_auto_fit_text(
     strategy: str = "smart",
     font_size: Optional[int] = None,
     font_name: Optional[str] = None,
+    font_style: Optional[str] = None,
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
-    color: Optional[List[int]] = None,
+    color: Optional[Union[str, List[int]]] = None,
     alignment: Optional[str] = None,
     create_new_slides: bool = True,
     slide_title_template: Optional[str] = None,
@@ -469,6 +535,7 @@ def add_auto_fit_text(
     - Multi-column layout for better readability
     - Slide splitting for very long content
     
+    Supports semantic styling tags for colors and fonts.
     Goal: Maximum readability and sensible slide division for large data sets.
     
     Args:
@@ -485,9 +552,11 @@ def add_auto_fit_text(
             - 'split_slides': Split across multiple slides
         font_size: Optional preferred font size in points (will be adjusted if needed)
         font_name: Optional font name (defaults to template or Calibri)
+        font_style: Optional semantic font style tag ('title', 'heading', 'body', 'caption', 'code')
         bold: Optional bold formatting
         italic: Optional italic formatting
-        color: Optional text color as RGB list [r, g, b]
+        color: Optional text color - can be a semantic tag ('primary', 'accent', 'critical',
+               'success', 'warning', 'text', 'neutral') or RGB list [r, g, b]
         alignment: Optional text alignment (left, center, right, justify)
         create_new_slides: Whether to create new slides if content is split (default: True)
         slide_title_template: Title template for new slides (use {page} for page number)
@@ -503,13 +572,14 @@ def add_auto_fit_text(
             - shapes_created: List of created shapes
             - new_slides_created: List of any new slide indices
             
-    Example:
-        # Long AI-generated content that needs intelligent fitting
+    Example with semantic tags:
         add_auto_fit_text(
             slide_index=0,
             left=0.5, top=1.5, width=9.0, height=5.0,
             text="Very long AI-generated content...",
             strategy="smart",
+            color="text",
+            font_style="body",
             create_new_slides=True,
             slide_title_template="Content (Page {page})"
         )
@@ -517,7 +587,7 @@ def add_auto_fit_text(
     logger.info(f"Adding auto-fit text to slide {slide_index} with strategy: {strategy}")
     return slide_manager.add_auto_fit_text(
         slide_index, left, top, width, height, text,
-        strategy=strategy, font_size=font_size, font_name=font_name,
+        strategy=strategy, font_size=font_size, font_name=font_name, font_style=font_style,
         bold=bold, italic=italic, color=color, alignment=alignment,
         create_new_slides=create_new_slides, slide_title_template=slide_title_template,
         presentation_id=presentation_id
@@ -543,14 +613,17 @@ def add_grid_layout(
     The layout engine automatically calculates positions based on slide dimensions.
     This is ideal for AI/LLM-generated content that works with structural descriptions.
     
+    Supports semantic styling tags for colors in addition to RGB values.
+    
     Args:
         slide_index: Index of the target slide
         elements: List of element dictionaries. Each element can have:
             - content (required): Text content for the element
             - element_type: 'textbox' or 'shape' (default: 'textbox')
             - shape_type: For shapes: 'rectangle', 'rounded_rectangle', 'oval', etc.
-            - fill_color: RGB list [r, g, b] for shape fill
-            - text_color: RGB list [r, g, b] for text
+            - fill_color: Semantic tag ('primary', 'accent', 'success', etc.) or RGB list [r, g, b]
+            - text_color: Semantic tag ('text', 'text_inverted', etc.) or RGB list [r, g, b]
+            - line_color: Semantic tag or RGB list [r, g, b]
             - font_size: Font size in points
             - bold: Boolean for bold text
         rows: Number of rows in the grid (default: 2)
@@ -561,12 +634,12 @@ def add_grid_layout(
     Returns:
         Dictionary with confirmation, layout info, and created shape indices
         
-    Example:
+    Example with semantic tags:
         add_grid_layout(0, [
-            {"content": "Q1", "fill_color": [79, 129, 189]},
-            {"content": "Q2", "fill_color": [192, 80, 77]},
-            {"content": "Q3", "fill_color": [155, 187, 89]},
-            {"content": "Q4", "fill_color": [128, 100, 162]}
+            {"content": "Q1", "fill_color": "primary"},
+            {"content": "Q2", "fill_color": "secondary"},
+            {"content": "Q3", "fill_color": "success"},
+            {"content": "Q4", "fill_color": "accent"}
         ], rows=2, cols=2)
     """
     logger.info(f"Creating grid layout ({rows}x{cols}) with {len(elements)} elements on slide {slide_index}")
@@ -591,14 +664,16 @@ def add_list_layout(
     The layout engine automatically calculates positions based on slide dimensions.
     Perfect for bullet-point style content or horizontal feature comparisons.
     
+    Supports semantic styling tags for colors in addition to RGB values.
+    
     Args:
         slide_index: Index of the target slide
         elements: List of element dictionaries. Each element can have:
             - content (required): Text content for the element
             - element_type: 'textbox' or 'shape' (default: 'textbox')
             - shape_type: For shapes: 'rectangle', 'rounded_rectangle', 'oval', etc.
-            - fill_color: RGB list [r, g, b] for shape fill
-            - text_color: RGB list [r, g, b] for text
+            - fill_color: Semantic tag ('primary', 'accent', etc.) or RGB list [r, g, b]
+            - text_color: Semantic tag ('text', 'text_inverted', etc.) or RGB list [r, g, b]
             - font_size: Font size in points
             - bold: Boolean for bold text
         direction: 'vertical' or 'horizontal' (default: 'vertical')
@@ -610,11 +685,11 @@ def add_list_layout(
     Returns:
         Dictionary with confirmation, layout info, and created shape indices
         
-    Example:
+    Example with semantic tags:
         add_list_layout(0, [
-            {"content": "Feature A: Performance improvements"},
-            {"content": "Feature B: New user interface"},
-            {"content": "Feature C: Enhanced security"}
+            {"content": "Performance improvements", "fill_color": "success"},
+            {"content": "New user interface", "fill_color": "info"},
+            {"content": "Enhanced security", "fill_color": "primary"}
         ], direction="vertical", alignment="left")
     """
     logger.info(f"Creating {direction} list layout with {len(elements)} elements on slide {slide_index}")

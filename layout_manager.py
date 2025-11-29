@@ -5,7 +5,8 @@ Provides automatic layout calculation and placement for AI-generated PowerPoint 
 This module eliminates the need for explicit pixel coordinates by offering structural
 layout descriptions (grid, list, hierarchy, flow) that automatically calculate positions.
 
-Now includes intelligent text auto-fit to handle extensive AI-generated content.
+Now includes intelligent text auto-fit and semantic styling support for AI-friendly
+color and font selection.
 """
 from typing import Optional, Dict, Any, List, Union, Tuple
 from dataclasses import dataclass, field
@@ -157,6 +158,14 @@ class LayoutEngine:
             "text_color": list(colors.get("text_1", (0, 0, 0))),
             "line_color": list(colors.get("text_1", (0, 0, 0)))
         }
+    
+    def _resolve_color(self, color_input: Union[str, List[int], None]) -> Optional[List[int]]:
+        """
+        Resolve color input to RGB values.
+        
+        Accepts either a semantic tag (e.g., "accent", "critical") or RGB list.
+        """
+        return template_manager.resolve_color(color_input)
     
     # =========================================================================
     # GRID LAYOUT
@@ -772,17 +781,30 @@ class LayoutEngine:
         data: Dict[str, Any],
         defaults: Dict[str, Any]
     ) -> LayoutElement:
-        """Create a LayoutElement from a dictionary with defaults."""
+        """
+        Create a LayoutElement from a dictionary with defaults.
+        
+        Supports semantic color tags in fill_color, line_color, and text_color fields.
+        """
+        # Resolve semantic colors to RGB values
+        fill_color = data.get("fill_color")
+        line_color = data.get("line_color")
+        text_color = data.get("text_color")
+        
+        resolved_fill = self._resolve_color(fill_color) if fill_color else defaults.get("fill_color")
+        resolved_line = self._resolve_color(line_color) if line_color else defaults.get("line_color")
+        resolved_text = self._resolve_color(text_color) if text_color else defaults.get("text_color")
+        
         return LayoutElement(
             content=str(data.get("content", "")),
             element_type=data.get("element_type", "textbox"),
             shape_type=data.get("shape_type"),
-            fill_color=data.get("fill_color", defaults.get("fill_color")),
-            line_color=data.get("line_color", defaults.get("line_color")),
+            fill_color=resolved_fill,
+            line_color=resolved_line,
             font_size=data.get("font_size", defaults.get("font_size")),
             font_name=data.get("font_name", defaults.get("font_name")),
             bold=data.get("bold"),
-            text_color=data.get("text_color", defaults.get("text_color")),
+            text_color=resolved_text,
             alignment=data.get("alignment", "center")
         )
     
