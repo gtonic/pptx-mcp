@@ -68,7 +68,7 @@ class DiagramRenderer:
     def __init__(self):
         self._parser = diagram_parser
     
-    @performance_monitor.track_operation("render_diagram")
+    @performance_monitor.track_operation("render_mermaid_diagram")
     def render_mermaid(
         self,
         slide_index: int,
@@ -99,7 +99,7 @@ class DiagramRenderer:
             logger.error(f"Failed to parse Mermaid diagram: {e}")
             return {"error": f"Failed to parse Mermaid diagram: {str(e)}"}
     
-    @performance_monitor.track_operation("render_diagram")
+    @performance_monitor.track_operation("render_plantuml_diagram")
     def render_plantuml(
         self,
         slide_index: int,
@@ -130,7 +130,7 @@ class DiagramRenderer:
             logger.error(f"Failed to parse PlantUML diagram: {e}")
             return {"error": f"Failed to parse PlantUML diagram: {str(e)}"}
     
-    @performance_monitor.track_operation("render_diagram")
+    @performance_monitor.track_operation("render_auto_diagram")
     def render_auto(
         self,
         slide_index: int,

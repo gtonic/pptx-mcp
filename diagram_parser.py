@@ -521,7 +521,7 @@ class DiagramParser:
             return 'plantuml'
         
         # PlantUML-style keywords
-        if code_lower.startswith('start') or ':' in code and ';' in code:
+        if code_lower.startswith('start') or (':' in code and ';' in code):
             return 'plantuml'
         
         # Mermaid markers
