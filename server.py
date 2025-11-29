@@ -17,6 +17,7 @@ from slide_manager import slide_manager
 from layout_manager import layout_manager
 from input_validator import validator, ValidationError
 from performance_optimizer import performance_monitor
+from diagram_renderer import diagram_renderer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -837,6 +838,151 @@ def cleanup_memory() -> Dict[str, Any]:
     logger.info("Performing memory cleanup")
     performance_monitor.cleanup_memory()
     return {"message": "Memory cleanup completed", "timestamp": time.time()}
+
+
+# ============================================================================
+# DIAGRAM TOOLS (Mermaid/PlantUML)
+# ============================================================================
+
+@mcp.tool()
+def add_mermaid_diagram(
+    slide_index: int,
+    mermaid_code: str,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Render a Mermaid diagram as editable PowerPoint shapes.
+    
+    This tool parses Mermaid flowchart syntax and converts it to native
+    PowerPoint vector shapes (not images!), allowing further editing.
+    
+    Supported Mermaid syntax:
+    - Flowcharts: graph TD/LR/BT/RL
+    - Node shapes: [rect], (rounded), {diamond}, ((circle)), [[database]]
+    - Edges: -->, ---, -.->
+    - Edge labels: -->|label|
+    
+    Args:
+        slide_index: Index of the target slide
+        mermaid_code: Mermaid diagram code (e.g., "graph TD\\nA[Start] --> B[End]")
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with rendering results including node count and edge count
+        
+    Example:
+        add_mermaid_diagram(0, '''
+            graph TD
+            A[Start] --> B{Decision}
+            B -->|Yes| C[Process]
+            B -->|No| D[End]
+        ''')
+    """
+    logger.info(f"Rendering Mermaid diagram on slide {slide_index}")
+    return diagram_renderer.render_mermaid(
+        slide_index=slide_index,
+        mermaid_code=mermaid_code,
+        presentation_id=presentation_id
+    )
+
+
+@mcp.tool()
+def add_plantuml_diagram(
+    slide_index: int,
+    plantuml_code: str,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Render a PlantUML diagram as editable PowerPoint shapes.
+    
+    This tool parses PlantUML activity diagram syntax and converts it to native
+    PowerPoint vector shapes (not images!), allowing further editing.
+    
+    Supported PlantUML syntax:
+    - Activity diagrams: start, stop, :action;
+    - Conditionals: if/then/else/endif
+    - Arrows between nodes: A --> B
+    
+    Args:
+        slide_index: Index of the target slide
+        plantuml_code: PlantUML diagram code
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with rendering results including node count and edge count
+        
+    Example:
+        add_plantuml_diagram(0, '''
+            @startuml
+            start
+            :Initialize;
+            if (Valid?) then (yes)
+                :Process;
+            else (no)
+                :Error;
+            endif
+            stop
+            @enduml
+        ''')
+    """
+    logger.info(f"Rendering PlantUML diagram on slide {slide_index}")
+    return diagram_renderer.render_plantuml(
+        slide_index=slide_index,
+        plantuml_code=plantuml_code,
+        presentation_id=presentation_id
+    )
+
+
+@mcp.tool()
+def add_diagram(
+    slide_index: int,
+    diagram_code: str,
+    presentation_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Automatically detect and render a diagram from Mermaid or PlantUML code.
+    
+    This tool automatically detects whether the input is Mermaid or PlantUML
+    syntax and renders it as editable PowerPoint vector shapes.
+    
+    Perfect for AI/LLM workflows that generate diagrams in text-based DSLs.
+    The diagrams are converted to native PowerPoint shapes (not images!).
+    
+    Args:
+        slide_index: Index of the target slide
+        diagram_code: Diagram code in Mermaid or PlantUML syntax
+        presentation_id: Optional ID of the target presentation
+        
+    Returns:
+        Dictionary with rendering results including:
+        - detected_type: 'mermaid' or 'plantuml'
+        - diagram_type: Type of diagram (flow, hierarchy)
+        - node_count: Number of nodes rendered
+        - edge_count: Number of connections rendered
+        - shapes: List of created shape indices
+        
+    Example (Mermaid):
+        add_diagram(0, '''
+            graph LR
+            A[Input] --> B[Process] --> C[Output]
+        ''')
+        
+    Example (PlantUML):
+        add_diagram(0, '''
+            @startuml
+            start
+            :Step 1;
+            :Step 2;
+            stop
+            @enduml
+        ''')
+    """
+    logger.info(f"Rendering auto-detected diagram on slide {slide_index}")
+    return diagram_renderer.render_auto(
+        slide_index=slide_index,
+        diagram_code=diagram_code,
+        presentation_id=presentation_id
+    )
 
 
 # ============================================================================

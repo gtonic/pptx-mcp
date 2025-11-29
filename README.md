@@ -6,13 +6,20 @@ The server is built using Python with the **FastMCP** framework and the `python-
 
 ## ✨ New Features & Improvements
 
-### 🧠 **Intelligent Text Auto-Fit** (NEW!)
+### 📊 **Diagram Support (Mermaid/PlantUML)** (NEW!)
+- **Text-Based Diagrams**: Parse Mermaid and PlantUML syntax directly into editable PowerPoint shapes
+- **AI-Friendly DSLs**: Let AI describe diagrams in familiar text formats instead of specifying individual shapes
+- **Native Vector Output**: All diagrams are rendered as editable PowerPoint shapes, not images
+- **Auto-Layout**: Automatic positioning based on diagram structure
+- **Multiple Formats**: Support for flowcharts, activity diagrams, hierarchies, and process flows
+
+### 🧠 **Intelligent Text Auto-Fit**
 - **Smart Content Handling**: Automatically adjusts font size, columns, or slide splits for extensive AI-generated content
 - **Multi-Column Layout**: Distributes long text across columns for better readability
 - **Auto Slide Splitting**: Intelligently splits content across multiple slides when needed
 - **Maximum Readability**: Ensures optimal text presentation without manual formatting
 
-### 🏗️ **High-Level Layout Engine** (NEW!)
+### 🏗️ **High-Level Layout Engine**
 - **AI-Friendly Design**: Create complex layouts without specifying pixel coordinates
 - **Grid Layout**: Automatic grid arrangement for dashboard-style content
 - **List Layout**: Vertical and horizontal lists with automatic spacing
@@ -267,6 +274,74 @@ Professional data visualization and content creation tools.
             {"content": "Process"},
             {"content": "End"}
         ], direction="horizontal", connector_style="arrow")
+        ```
+
+### 📊 Diagram Tools (Mermaid/PlantUML)
+
+These tools allow AI/LLM workflows to create diagrams using familiar text-based DSLs, converting them to editable PowerPoint vector shapes.
+
+*   **`add_mermaid_diagram(slide_index, mermaid_code, ...) -> Dict`**
+    *   **Description:** Parse Mermaid flowchart syntax and render as editable PowerPoint shapes.
+    *   **Supported Syntax:**
+        *   Flowcharts: `graph TD/LR/BT/RL`
+        *   Node shapes: `[rect]`, `(rounded)`, `{diamond}`, `((circle))`, `[[database]]`
+        *   Edges: `-->`, `---`, `-.->`
+        *   Edge labels: `-->|label|`
+    *   **Example:**
+        ```python
+        add_mermaid_diagram(0, '''
+            graph TD
+            A[Start] --> B{Decision}
+            B -->|Yes| C[Process]
+            B -->|No| D[End]
+        ''')
+        ```
+
+*   **`add_plantuml_diagram(slide_index, plantuml_code, ...) -> Dict`**
+    *   **Description:** Parse PlantUML activity diagram syntax and render as editable PowerPoint shapes.
+    *   **Supported Syntax:**
+        *   Activity diagrams: `start`, `stop`, `:action;`
+        *   Conditionals: `if/then/else/endif`
+        *   Arrows between nodes: `A --> B`
+    *   **Example:**
+        ```python
+        add_plantuml_diagram(0, '''
+            @startuml
+            start
+            :Initialize;
+            if (Valid?) then (yes)
+                :Process;
+            else (no)
+                :Error;
+            endif
+            stop
+            @enduml
+        ''')
+        ```
+
+*   **`add_diagram(slide_index, diagram_code, ...) -> Dict`**
+    *   **Description:** Auto-detect diagram type (Mermaid or PlantUML) and render as editable PowerPoint shapes.
+    *   **Features:**
+        *   Automatic syntax detection
+        *   Native vector output (not images)
+        *   Automatic layout and positioning
+    *   **Example:**
+        ```python
+        # Mermaid (auto-detected)
+        add_diagram(0, '''
+            graph LR
+            A[Input] --> B[Process] --> C[Output]
+        ''')
+        
+        # PlantUML (auto-detected)
+        add_diagram(0, '''
+            @startuml
+            start
+            :Step 1;
+            :Step 2;
+            stop
+            @enduml
+        ''')
         ```
 
 ## 🚀 Professional Use Cases
