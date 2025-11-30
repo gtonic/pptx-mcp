@@ -33,6 +33,34 @@ class SlideManager:
         """
         return template_manager.resolve_color(color_input)
     
+    def _resolve_color_with_default(
+        self,
+        color_input: Union[str, List[int], None],
+        default_key: str = "accent_1"
+    ) -> Optional[List[int]]:
+        """
+        Resolve color input to RGB values with fallback to template default.
+        
+        This helper function consolidates the repeated pattern of resolving 
+        semantic colors and falling back to template defaults when no color 
+        is provided.
+        
+        Args:
+            color_input: Semantic tag (e.g., "accent", "critical"), RGB list, or None
+            default_key: Key for default color in template settings 
+                        (e.g., "accent_1", "text_1")
+            
+        Returns:
+            RGB color as list [r, g, b] or None if no default is available
+        """
+        resolved_color = self._resolve_color(color_input)
+        if resolved_color is None:
+            color_defaults = template_manager.get_default_color_settings()
+            default_color = color_defaults.get(default_key)
+            if default_color:
+                resolved_color = list(default_color)
+        return resolved_color
+    
     @performance_monitor.track_operation("add_slide")
     def add_slide(self, layout_index: int = 1, title: Optional[str] = None, presentation_id: Optional[str] = None) -> Dict[str, Any]:
         """Add a new slide to the presentation."""
@@ -89,8 +117,8 @@ class SlideManager:
             left, top, width, height = validator.validate_dimensions(left, top, width, height)
             text = validator.validate_text(text)
             
-            # Resolve semantic color to RGB if provided
-            resolved_color = self._resolve_color(color)
+            # Resolve semantic color to RGB with fallback to template default
+            resolved_color = self._resolve_color_with_default(color, default_key="accent_1")
             if resolved_color:
                 resolved_color = validator.validate_color(resolved_color)
             
@@ -109,13 +137,6 @@ class SlideManager:
             final_font_size = font_settings.get("font_size")
             final_bold = font_settings.get("bold")
             final_italic = font_settings.get("italic")
-            
-            # Use resolved color or fallback to template default
-            if resolved_color is None:
-                color_defaults = template_manager.get_default_color_settings()
-                accent = color_defaults.get("accent_1")
-                if accent:
-                    resolved_color = list(accent)
             
             ppt_utils.add_textbox(
                 slide, left, top, width, height, text,
@@ -150,21 +171,9 @@ class SlideManager:
             slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
             slide = pres.slides[slide_index]
             
-            # Resolve semantic colors to RGB
-            resolved_fill = self._resolve_color(fill_color)
-            resolved_line = self._resolve_color(line_color)
-            
-            # Use template styles as defaults if not provided
-            color_defaults = template_manager.get_default_color_settings()
-            
-            if resolved_fill is None:
-                accent = color_defaults.get("accent_1")
-                if accent:
-                    resolved_fill = list(accent)
-            if resolved_line is None:
-                text1 = color_defaults.get("text_1")
-                if text1:
-                    resolved_line = list(text1)
+            # Resolve semantic colors to RGB with fallback to template defaults
+            resolved_fill = self._resolve_color_with_default(fill_color, default_key="accent_1")
+            resolved_line = self._resolve_color_with_default(line_color, default_key="text_1")
             
             ppt_utils.add_shape(
                 slide, shape_type, left, top, width, height,
@@ -196,15 +205,8 @@ class SlideManager:
             slide_index = validator.validate_slide_index(slide_index, len(pres.slides))
             slide = pres.slides[slide_index]
             
-            # Resolve semantic color to RGB
-            resolved_color = self._resolve_color(line_color)
-            
-            # Use template default colors if not provided
-            if resolved_color is None:
-                color_defaults = template_manager.get_default_color_settings()
-                text1 = color_defaults.get("text_1")
-                if text1:
-                    resolved_color = list(text1)
+            # Resolve semantic color to RGB with fallback to template default
+            resolved_color = self._resolve_color_with_default(line_color, default_key="text_1")
             
             ppt_utils.add_line(
                 slide, x1, y1, x2, y2,
@@ -382,8 +384,8 @@ class SlideManager:
             left, top, width, height = validator.validate_dimensions(left, top, width, height)
             text = validator.validate_text(text)
             
-            # Resolve semantic color to RGB
-            resolved_color = self._resolve_color(color)
+            # Resolve semantic color to RGB with fallback to template default
+            resolved_color = self._resolve_color_with_default(color, default_key="accent_1")
             if resolved_color:
                 resolved_color = validator.validate_color(resolved_color)
             
@@ -399,13 +401,6 @@ class SlideManager:
             final_font_name = font_settings.get("font_name")
             final_bold = font_settings.get("bold")
             final_italic = font_settings.get("italic")
-            
-            # Use resolved color or fallback to template default
-            if resolved_color is None:
-                color_defaults = template_manager.get_default_color_settings()
-                accent = color_defaults.get("accent_1")
-                if accent:
-                    resolved_color = list(accent)
             
             # Parse strategy
             strategy_map = {
