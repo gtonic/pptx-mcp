@@ -2,8 +2,10 @@
 """
 Tests for the presentation manager module.
 
-Tests the core presentation lifecycle including creation, opening, saving,
-and managing presentation state.
+The PresentationManager handles the core presentation lifecycle including 
+creation, opening, saving, and managing presentation state in memory.
+It maintains a dictionary of loaded presentations and tracks the current
+active presentation.
 """
 
 import sys
