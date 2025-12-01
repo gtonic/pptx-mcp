@@ -184,7 +184,7 @@ class SemanticStyleResolver:
         rgb = resolver.resolve_color_input([255, 0, 0])  # Returns [255, 0, 0]
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._default_theme = create_default_theme()
         self._template_theme: Optional[SemanticTheme] = None
     

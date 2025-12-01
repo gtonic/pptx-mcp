@@ -13,7 +13,7 @@ from semantic_styles import style_resolver, SemanticStyleResolver
 class TemplateManager:
     """Manages PowerPoint template styles and theming."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         # In-memory storage for template styles
         self.current_template_styles: Optional[Dict[str, Any]] = None
         self.current_template_path: Optional[str] = None

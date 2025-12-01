@@ -500,7 +500,7 @@ class DiagramParser:
         ''')
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._mermaid_parser = MermaidParser()
         self._plantuml_parser = PlantUMLParser()
     

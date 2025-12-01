@@ -40,7 +40,7 @@ def save_presentation(pres: Presentation, file_path: str) -> str:
     pres.save(file_path)
     return file_path
 
-def get_presentation_info(pres: Presentation) -> Dict:
+def get_presentation_info(pres: Presentation) -> Dict[str, Any]:
     """Gets information about a presentation."""
     layouts = {i: layout.name for i, layout in enumerate(pres.slide_layouts)}
     props = pres.core_properties
@@ -50,7 +50,7 @@ def get_presentation_info(pres: Presentation) -> Dict:
     }
     return {"slide_count": len(pres.slides), "slide_layouts": layouts, "core_properties": core_props}
 
-def set_core_properties(pres: Presentation, **kwargs) -> Dict:
+def set_core_properties(pres: Presentation, **kwargs: Any) -> Dict[str, Any]:
     """Sets core document properties."""
     props = pres.core_properties
     for key, value in kwargs.items():
@@ -58,7 +58,7 @@ def set_core_properties(pres: Presentation, **kwargs) -> Dict:
             setattr(props, key, value)
     return get_presentation_info(pres)['core_properties']
 
-def add_slide(pres: Presentation, layout_index: int, title: Optional[str] = None) -> Tuple[Any, Dict]:
+def add_slide(pres: Presentation, layout_index: int, title: Optional[str] = None) -> Tuple[Any, Dict[str, Any]]:
     """Adds a new slide to the presentation."""
     slide_layout = pres.slide_layouts[layout_index]
     slide = pres.slides.add_slide(slide_layout)
@@ -67,7 +67,7 @@ def add_slide(pres: Presentation, layout_index: int, title: Optional[str] = None
     placeholders = {p.placeholder_format.idx: p.name for p in slide.placeholders}
     return slide, {"layout_name": slide_layout.name, "placeholders": placeholders}
 
-def add_textbox(slide: Any, left: float, top: float, width: float, height: float, text: str, **kwargs):
+def add_textbox(slide: Any, left: float, top: float, width: float, height: float, text: str, **kwargs: Any) -> Any:
     """Adds a textbox to a slide and formats it."""
     from pptx.util import Inches, Pt
     from pptx.dml.color import RGBColor
@@ -85,7 +85,7 @@ def add_textbox(slide: Any, left: float, top: float, width: float, height: float
     if kwargs.get('alignment'): p.alignment = getattr(PP_ALIGN, kwargs['alignment'].upper())
     return txBox
 
-def add_shape(slide: Any, shape_type: str, left: float, top: float, width: float, height: float, **kwargs):
+def add_shape(slide: Any, shape_type: str, left: float, top: float, width: float, height: float, **kwargs: Any) -> Any:
     """Adds an auto shape to a slide and formats it."""
     from pptx.util import Inches, Pt
     from pptx.dml.color import RGBColor
@@ -115,7 +115,7 @@ def add_shape(slide: Any, shape_type: str, left: float, top: float, width: float
             line.width = Pt(kwargs['line_width'])
     return shape
 
-def add_line(slide: Any, x1: float, y1: float, x2: float, y2: float, line_color: Optional[List[int]] = None, line_width: Optional[float] = None):
+def add_line(slide: Any, x1: float, y1: float, x2: float, y2: float, line_color: Optional[List[int]] = None, line_width: Optional[float] = None) -> Any:
     """
     Adds a straight line (connector) to a slide.
     Coordinates are in inches.

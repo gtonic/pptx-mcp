@@ -86,7 +86,7 @@ class TextAutoFitEngine:
     the optimal layout strategy for maximum readability.
     """
     
-    def __init__(self, config: Optional[AutoFitConfig] = None):
+    def __init__(self, config: Optional[AutoFitConfig] = None) -> None:
         self.config = config or AutoFitConfig()
     
     def analyze_text(self, text: str) -> TextMetrics:
