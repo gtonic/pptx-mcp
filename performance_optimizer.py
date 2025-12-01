@@ -25,7 +25,7 @@ except ImportError:
 class PerformanceMonitor:
     """Monitors and optimizes performance of PowerPoint operations."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.operation_stats: Dict[str, Dict[str, Any]] = {}
         self.memory_threshold_mb = 500  # MB
         self.slide_count_threshold = 50  # slides
@@ -168,7 +168,7 @@ class PerformanceMonitor:
             'suggested_batch_size': min(10, max(1, 50 // (slide_count // 50 + 1)))
         }
     
-    def cleanup_memory(self):
+    def cleanup_memory(self) -> None:
         """Force garbage collection to free memory."""
         gc.collect()
         logger.info("Performed memory cleanup")
@@ -177,7 +177,7 @@ class PerformanceMonitor:
 class BatchProcessor:
     """Handles batch processing of large presentation operations."""
     
-    def __init__(self, batch_size: int = 10):
+    def __init__(self, batch_size: int = 10) -> None:
         self.batch_size = batch_size
     
     def process_slides_in_batches(self, slides_data: List[Any], 
@@ -218,7 +218,7 @@ class BatchProcessor:
 class CacheManager:
     """Manages caching for frequently accessed presentation elements."""
     
-    def __init__(self, max_cache_size: int = 100):
+    def __init__(self, max_cache_size: int = 100) -> None:
         self.cache: Dict[str, Any] = {}
         self.access_times: Dict[str, float] = {}
         self.max_cache_size = max_cache_size

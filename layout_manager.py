@@ -133,7 +133,7 @@ class LayoutEngine:
     eliminating the need for AI/LLMs to provide explicit coordinates.
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.default_bounds = LayoutBounds()
     
     def _get_slide_bounds(self, presentation_id: Optional[str] = None) -> LayoutBounds:

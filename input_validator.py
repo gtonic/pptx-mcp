@@ -106,7 +106,7 @@ class InputValidator:
         return left, top, width, height
     
     @staticmethod
-    def validate_text(text: str, max_length: int = None) -> str:
+    def validate_text(text: str, max_length: Optional[int] = None) -> str:
         """
         Validate text input for length and content.
         

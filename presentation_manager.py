@@ -13,7 +13,7 @@ import ppt_utils
 class PresentationManager:
     """Manages PowerPoint presentations in memory."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         # In-memory storage for presentations
         self.presentations: Dict[str, Presentation] = {}
         self.current_presentation_id: Optional[str] = None

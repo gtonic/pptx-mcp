@@ -65,7 +65,7 @@ class DiagramRenderer:
     positioning, styling, and connectors.
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._parser = diagram_parser
     
     @performance_monitor.track_operation("render_mermaid_diagram")
